@@ -224,8 +224,15 @@
   .advanced-only { display: none; }
   body[data-mode="advanced"] .advanced-only { display: block; animation: fade 0.25s ease; }
 
-  /* Normal content — visible by default, hidden when Advanced is active */
-  body[data-mode="advanced"] .normal-only { display: none; }
+  /* In Advanced mode, hide ALL beginner-pitched content within tabpanels:
+     subtitles (introductory prose) and card grids (concept cards).
+     Diagrams, sub-headings, the legend, the Advanced panel, and the
+     takeaway stay visible — they're useful reference at any level. */
+  body[data-mode="advanced"] .normal-only,
+  body[data-mode="advanced"] section.tabpanel > .panel > p.section-sub,
+  body[data-mode="advanced"] section.tabpanel > .panel > div.grid {
+    display: none;
+  }
 
   /* Advanced panel — visually distinct from the main content */
   .advanced-panel {
@@ -2957,6 +2964,16 @@
     if (k === '0') { activate(order[9]); return; }
     const i = parseInt(k, 10);
     if (i >= 1 && i <= 9) activate(order[i-1]);
+  });
+
+  // Move each Advanced panel to sit right after the hero diagram on its tab,
+  // so Advanced mode leads with practices instead of burying them at the end.
+  document.querySelectorAll('section.tabpanel > .panel').forEach(panel => {
+    const heroDiagram = panel.querySelector(':scope > div.diagram');
+    const advancedPanel = panel.querySelector(':scope > div.advanced-only.advanced-panel');
+    if (heroDiagram && advancedPanel && heroDiagram.nextElementSibling !== advancedPanel) {
+      heroDiagram.insertAdjacentElement('afterend', advancedPanel);
+    }
   });
 
   // Normal / Advanced mode toggle (persists in localStorage)
