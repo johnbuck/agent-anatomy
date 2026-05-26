@@ -224,6 +224,9 @@
   .advanced-only { display: none; }
   body[data-mode="advanced"] .advanced-only { display: block; animation: fade 0.25s ease; }
 
+  /* Normal content — visible by default, hidden when Advanced is active */
+  body[data-mode="advanced"] .normal-only { display: none; }
+
   /* Advanced panel — visually distinct from the main content */
   .advanced-panel {
     margin-top: 32px;
@@ -367,7 +370,7 @@
   <section class="tabpanel active" id="intro">
     <div class="panel">
       <h2>Meet the agent</h2>
-      <p class="section-sub">An AI agent isn't one thing — it's a body of parts wired together. Below: each piece, mapped onto a body you already understand. The rest of this guide takes them one tab at a time.</p>
+      <p class="section-sub normal-only">An AI agent isn't one thing — it's a body of parts wired together. Below: each piece, mapped onto a body you already understand. The rest of this guide takes them one tab at a time.</p>
 
       <div class="diagram">
         <svg viewBox="0 0 980 560" width="980">
@@ -569,7 +572,7 @@
   <section class="tabpanel" id="models">
     <div class="panel">
       <h2>Models</h2>
-      <p class="section-sub">A "model" is the brain. Different brains have different sizes, speeds, and costs. You pick the right brain for the job.</p>
+      <p class="section-sub normal-only">A "model" is the brain. Different brains have different sizes, speeds, and costs. You pick the right brain for the job.</p>
 
       <div class="diagram">
         <svg viewBox="0 0 980 360" width="980">
@@ -801,7 +804,7 @@
         <span class="item"><span class="sw" style="background:#f472b6"></span>Router / aggregator</span>
       </div>
 
-      <div class="grid three" style="margin-top:22px">
+      <div class="grid three normal-only" style="margin-top:22px">
         <div class="card">
           <div class="label">Same family, different sizes</div>
           <h3>Pick the right brain</h3>
@@ -953,7 +956,7 @@
   <section class="tabpanel" id="tokens">
     <div class="panel">
       <h2>Tokens</h2>
-      <p class="section-sub">A <strong>token</strong> is a chunk of text — usually a whole word, sometimes a piece of one. It's the unit of measurement for almost everything that matters: how fast a model is, how much fits in the context window, and what each request costs.</p>
+      <p class="section-sub normal-only">A <strong>token</strong> is a chunk of text — usually a whole word, sometimes a piece of one. It's the unit of measurement for almost everything that matters: how fast a model is, how much fits in the context window, and what each request costs.</p>
 
       <div class="diagram">
         <svg viewBox="0 0 980 240" width="980">
@@ -995,7 +998,7 @@
         </svg>
       </div>
 
-      <div class="grid three" style="margin-top:22px">
+      <div class="grid three normal-only" style="margin-top:22px">
         <div class="card">
           <div class="label">The unit</div>
           <h3>Words, usually — sometimes pieces</h3>
@@ -1204,7 +1207,7 @@
   <section class="tabpanel" id="context">
     <div class="panel">
       <h2>Context</h2>
-      <p class="section-sub">A model has no memory of yesterday. Every time you talk to it, you hand it a stack of paper called "context." That stack has a maximum size — and reading a thick stack gets sloppy near the middle.</p>
+      <p class="section-sub normal-only">A model has no memory of yesterday. Every time you talk to it, you hand it a stack of paper called "context." That stack has a maximum size — and reading a thick stack gets sloppy near the middle.</p>
 
       <!-- Context window diagram -->
       <div class="diagram">
@@ -1446,7 +1449,7 @@
   <section class="tabpanel" id="harness">
     <div class="panel">
       <h2>Harness</h2>
-      <p class="section-sub">A bare model only takes text in and puts text out. The <em>harness</em> is the scaffolding around the model — the part that holds the conversation, runs tools on the model's behalf, asks for permission, and decides what the model gets to see on every turn. It's the difference between a brain in a jar and something you can actually drive.</p>
+      <p class="section-sub normal-only">A bare model only takes text in and puts text out. The <em>harness</em> is the scaffolding around the model — the part that holds the conversation, runs tools on the model's behalf, asks for permission, and decides what the model gets to see on every turn. It's the difference between a brain in a jar and something you can actually drive.</p>
 
       <div class="diagram">
         <svg viewBox="0 0 980 260" width="980">
@@ -1524,7 +1527,7 @@
         </svg>
       </div>
 
-      <div class="grid three" style="margin-top:22px">
+      <div class="grid three normal-only" style="margin-top:22px">
         <div class="card">
           <div class="label">It runs the loop</div>
           <h3>The model speaks once per turn</h3>
@@ -1793,7 +1796,7 @@
   <section class="tabpanel" id="rag">
     <div class="panel">
       <h2>RAG</h2>
-      <p class="section-sub"><strong>RAG</strong> stands for <em>Retrieval-Augmented Generation</em>. Before answering, the agent searches a pile of your private documents for the most relevant chunks, then hands those chunks to the model along with your question. It's how an agent stays grounded in information it wasn't trained on — without dumping a whole knowledge base into context every time.</p>
+      <p class="section-sub normal-only"><strong>RAG</strong> stands for <em>Retrieval-Augmented Generation</em>. Before answering, the agent searches a pile of your private documents for the most relevant chunks, then hands those chunks to the model along with your question. It's how an agent stays grounded in information it wasn't trained on — without dumping a whole knowledge base into context every time.</p>
 
       <div class="diagram">
         <svg viewBox="0 0 980 270" width="980">
@@ -1868,7 +1871,7 @@
         </svg>
       </div>
 
-      <div class="grid three" style="margin-top:22px">
+      <div class="grid three normal-only" style="margin-top:22px">
         <div class="card">
           <div class="label">The win</div>
           <h3>Search by meaning, not keywords</h3>
@@ -2031,7 +2034,7 @@
   <section class="tabpanel" id="memory">
     <div class="panel">
       <h2>Memory</h2>
-      <p class="section-sub">If the model is a goldfish, memory is the notebook it consults before every conversation. <span class="mono">AGENTS.md</span> / <span class="mono">CLAUDE.md</span> are the house rules pinned to the wall.</p>
+      <p class="section-sub normal-only">If the model is a goldfish, memory is the notebook it consults before every conversation. <span class="mono">AGENTS.md</span> / <span class="mono">CLAUDE.md</span> are the house rules pinned to the wall.</p>
 
       <div class="diagram">
         <svg viewBox="0 0 980 360" width="980">
@@ -2116,7 +2119,7 @@
         </svg>
       </div>
 
-      <div class="grid two" style="margin-top:22px">
+      <div class="grid two normal-only" style="margin-top:22px">
         <div class="card">
           <span class="pill green" style="margin-bottom:10px">Memory (per user)</span>
           <h3>Travels with you</h3>
@@ -2196,7 +2199,7 @@
   <section class="tabpanel" id="skills">
     <div class="panel">
       <h2>Skills</h2>
-      <p class="section-sub">A skill is a recipe card the agent pulls off the shelf when it sees a job that matches. Skills let an agent do specialized work without bloating every conversation with instructions it doesn't need.</p>
+      <p class="section-sub normal-only">A skill is a recipe card the agent pulls off the shelf when it sees a job that matches. Skills let an agent do specialized work without bloating every conversation with instructions it doesn't need.</p>
 
       <div class="diagram">
         <svg viewBox="0 0 980 360" width="980">
@@ -2286,7 +2289,7 @@
         </svg>
       </div>
 
-      <div class="grid three" style="margin-top:22px">
+      <div class="grid three normal-only" style="margin-top:22px">
         <div class="card">
           <div class="label">On-demand</div>
           <h3>Loaded just-in-time</h3>
@@ -2372,7 +2375,7 @@
   <section class="tabpanel" id="plugins">
     <div class="panel">
       <h2>Plugins</h2>
-      <p class="section-sub">A plugin is a sealed box that ships <em>tools</em>, <em>hooks</em>, and <em>skills</em> together. Install the box, get all three. Uninstall, and they're gone cleanly.</p>
+      <p class="section-sub normal-only">A plugin is a sealed box that ships <em>tools</em>, <em>hooks</em>, and <em>skills</em> together. Install the box, get all three. Uninstall, and they're gone cleanly.</p>
 
       <div class="diagram">
         <svg viewBox="0 0 980 360" width="980">
@@ -2446,7 +2449,7 @@
         </svg>
       </div>
 
-      <div class="grid three" style="margin-top:22px">
+      <div class="grid three normal-only" style="margin-top:22px">
         <div class="card">
           <div class="label">🔧 Tools</div>
           <h3>New verbs</h3>
@@ -2523,7 +2526,7 @@
   <section class="tabpanel" id="mcp">
     <div class="panel">
       <h2>MCP Servers</h2>
-      <p class="section-sub"><strong>MCP</strong> stands for <em>Model Context Protocol</em> — an open standard that lets any agent talk to any service through a single shared plug. Think USB for AI tools. Before USB, every peripheral had its own custom cable; after USB, one socket served everything. MCP is the same bet for AI.</p>
+      <p class="section-sub normal-only"><strong>MCP</strong> stands for <em>Model Context Protocol</em> — an open standard that lets any agent talk to any service through a single shared plug. Think USB for AI tools. Before USB, every peripheral had its own custom cable; after USB, one socket served everything. MCP is the same bet for AI.</p>
 
       <div class="diagram">
         <svg viewBox="0 0 980 340" width="980">
@@ -2608,7 +2611,7 @@
         </svg>
       </div>
 
-      <div class="grid three" style="margin-top:22px">
+      <div class="grid three normal-only" style="margin-top:22px">
         <div class="card">
           <div class="label">Standard plug</div>
           <h3>One protocol, any harness</h3>
@@ -2708,7 +2711,7 @@
   <section class="tabpanel" id="data">
     <div class="panel">
       <h2>Data</h2>
-      <p class="section-sub">Where does your prompt go after you send it? What gets logged? Will your conversation train the next model version? The answers depend on the provider, the plan, and the harness — and "depends" is often the most honest answer.</p>
+      <p class="section-sub normal-only">Where does your prompt go after you send it? What gets logged? Will your conversation train the next model version? The answers depend on the provider, the plan, and the harness — and "depends" is often the most honest answer.</p>
 
       <div class="diagram">
         <svg viewBox="0 0 980 280" width="980">
