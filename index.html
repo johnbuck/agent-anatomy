@@ -1,0 +1,2162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Agent Anatomy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0b0b10;
+    --panel: #15151c;
+    --panel-2: #1c1c25;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --fg: #ececf1;
+    --fg-2: #b9b9c4;
+    --muted: #7c7c8a;
+    --accent: #a78bfa;
+    --blue: #60a5fa;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --pink: #f472b6;
+    --rose: #fb7185;
+    --teal: #2dd4bf;
+    --orange: #fb923c;
+    --cyan: #22d3ee;
+    --indigo: #818cf8;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: "cv11", "ss01", "ss03";
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.55;
+    background:
+      radial-gradient(1200px 600px at 80% -200px, rgba(167,139,250,0.10), transparent 60%),
+      radial-gradient(900px 500px at -100px 200px, rgba(96,165,250,0.07), transparent 60%),
+      var(--bg);
+    min-height: 100vh;
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 48px 28px 80px; }
+
+  header.hero { display: flex; flex-direction: column; gap: 12px; margin-bottom: 36px; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+  }
+  h1 {
+    font-size: clamp(34px, 4.5vw, 52px); line-height: 1.05; margin: 0;
+    font-weight: 700; letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #fff 0%, #b9b9c4 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lede { color: var(--fg-2); font-size: 18px; max-width: 720px; margin: 0; }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 4px; margin: 32px 0 24px;
+    padding: 6px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; width: fit-content; flex-wrap: wrap;
+  }
+  .tab {
+    appearance: none; border: 0; background: transparent; color: var(--fg-2);
+    padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer;
+    border-radius: 10px; transition: background 0.15s, color 0.15s;
+    font-family: inherit; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .tab:hover { background: rgba(255,255,255,0.04); color: var(--fg); }
+  .tab.active { background: var(--panel-2); color: var(--fg); box-shadow: 0 0 0 1px var(--border-strong) inset; }
+  .tab .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.8; }
+
+  /* Panels */
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px;
+  }
+  .panel + .panel { margin-top: 20px; }
+  section.tabpanel { display: none; }
+  section.tabpanel.active { display: block; animation: fade 0.25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  h2 {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.01em;
+    margin: 0 0 6px;
+  }
+  h3 {
+    font-size: 15px; font-weight: 600; letter-spacing: 0.01em;
+    margin: 0 0 8px; color: var(--fg);
+  }
+  .section-sub { color: var(--muted); font-size: 14px; margin: 0 0 22px; }
+
+  .grid { display: grid; gap: 18px; }
+  .grid.two { grid-template-columns: 1fr 1fr; }
+  .grid.three { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 880px) {
+    .grid.two, .grid.three { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+  }
+  .card .label {
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; margin-bottom: 6px;
+  }
+  .card p { color: var(--fg-2); font-size: 14px; margin: 8px 0 0; }
+
+  /* Diagram surface */
+  .diagram {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  svg { display: block; max-width: 100%; height: auto; }
+
+  /* Legend rows */
+  .legend { display: flex; flex-wrap: wrap; gap: 14px 22px; margin-top: 14px; font-size: 13px; color: var(--fg-2); }
+  .legend .item { display: inline-flex; align-items: center; gap: 8px; }
+  .legend .sw { width: 12px; height: 12px; border-radius: 3px; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; font-size: 12px; font-weight: 600;
+    border-radius: 999px; border: 1px solid var(--border-strong);
+    color: var(--fg-2); background: rgba(255,255,255,0.02);
+  }
+  .pill.accent { color: var(--accent); border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.08); }
+  .pill.blue { color: var(--blue); border-color: rgba(96,165,250,0.35); background: rgba(96,165,250,0.08); }
+  .pill.green { color: var(--green); border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.08); }
+  .pill.amber { color: var(--amber); border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.08); }
+  .pill.pink { color: var(--pink); border-color: rgba(244,114,182,0.35); background: rgba(244,114,182,0.08); }
+  .pill.rose { color: var(--rose); border-color: rgba(251,113,133,0.35); background: rgba(251,113,133,0.08); }
+  .pill.orange { color: var(--orange); border-color: rgba(251,146,60,0.35); background: rgba(251,146,60,0.08); }
+  .pill.cyan { color: var(--cyan); border-color: rgba(34,211,238,0.35); background: rgba(34,211,238,0.08); }
+  .pill.indigo { color: var(--indigo); border-color: rgba(129,140,248,0.35); background: rgba(129,140,248,0.08); }
+
+  .takeaway {
+    margin-top: 22px; padding: 16px 18px;
+    background: linear-gradient(180deg, rgba(167,139,250,0.06), rgba(167,139,250,0.02));
+    border: 1px solid rgba(167,139,250,0.22); border-radius: 12px;
+    color: var(--fg);
+  }
+  .takeaway .k {
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin-bottom: 4px;
+  }
+  .takeaway p { margin: 0; color: var(--fg-2); font-size: 14px; }
+
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; color: var(--fg-2); }
+
+  footer {
+    margin-top: 48px; color: var(--muted); font-size: 12px; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="hero">
+    <span class="eyebrow">A field guide</span>
+    <h1>Agent Anatomy</h1>
+    <p class="lede">A visual tour of what makes a modern AI agent tick — head to toe, one part at a time.</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="intro" style="color: var(--fg)"><span class="dot"></span>Intro</button>
+    <button class="tab" data-tab="models" style="color: var(--accent)"><span class="dot"></span>Models</button>
+    <button class="tab" data-tab="tokens" style="color: var(--orange)"><span class="dot"></span>Tokens</button>
+    <button class="tab" data-tab="context" style="color: var(--blue)"><span class="dot"></span>Context</button>
+    <button class="tab" data-tab="harness" style="color: var(--teal)"><span class="dot"></span>Harness</button>
+    <button class="tab" data-tab="rag" style="color: var(--cyan)"><span class="dot"></span>RAG</button>
+    <button class="tab" data-tab="memory" style="color: var(--green)"><span class="dot"></span>Memory</button>
+    <button class="tab" data-tab="skills" style="color: var(--amber)"><span class="dot"></span>Skills</button>
+    <button class="tab" data-tab="plugins" style="color: var(--pink)"><span class="dot"></span>Plugins</button>
+    <button class="tab" data-tab="mcp" style="color: var(--rose)"><span class="dot"></span>MCP</button>
+    <button class="tab" data-tab="data" style="color: var(--indigo)"><span class="dot"></span>Data</button>
+  </nav>
+
+  <!-- =================== INTRO =================== -->
+  <section class="tabpanel active" id="intro">
+    <div class="panel">
+      <h2>Meet the agent</h2>
+      <p class="section-sub">An AI agent isn't one thing — it's a body of parts wired together. Below: each piece, mapped onto a body you already understand. The rest of this guide takes them one tab at a time.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 560" width="980">
+          <text x="490" y="28" text-anchor="middle" font-size="13" fill="#7c7c8a" letter-spacing="3">AN AI AGENT, HEAD TO TOE</text>
+
+          <!-- ===== THE FIGURE ===== -->
+
+          <!-- Head (shorter — 100h instead of 130h, bottom still meets the neck) -->
+          <rect x="435" y="110" width="110" height="100" rx="16" fill="#a78bfa14" stroke="#a78bfa" stroke-width="2"/>
+
+          <!-- Brain (moved up, sitting near the top of the head) -->
+          <ellipse cx="490" cy="132" rx="26" ry="13" fill="#a78bfa44" stroke="#a78bfa" stroke-width="1.5"/>
+          <path d="M 490 121 Q 495 132, 490 143" stroke="#a78bfa" fill="none" stroke-width="1.2" stroke-opacity="0.7"/>
+
+          <!-- Eyes -->
+          <circle cx="464" cy="170" r="6" fill="#22d3ee44" stroke="#22d3ee" stroke-width="1.5"/>
+          <circle cx="516" cy="170" r="6" fill="#22d3ee44" stroke="#22d3ee" stroke-width="1.5"/>
+          <circle cx="464" cy="170" r="2" fill="#0b0b10"/>
+          <circle cx="516" cy="170" r="2" fill="#0b0b10"/>
+
+          <!-- Mouth -->
+          <path d="M 470 192 Q 490 200, 510 192" stroke="#fb923c" stroke-width="2.5" fill="none"/>
+
+          <!-- Neck -->
+          <rect x="475" y="210" width="30" height="20" fill="#2dd4bf22" stroke="#2dd4bf66"/>
+
+          <!-- Torso -->
+          <path d="M 405 230 L 575 230 L 590 410 L 390 410 z" fill="#2dd4bf18" stroke="#2dd4bf" stroke-width="2"/>
+
+          <!-- Backpack outline on torso (Skills) -->
+          <rect x="420" y="248" width="140" height="92" rx="8" fill="#fbbf2418" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5 4"/>
+          <text x="490" y="285" text-anchor="middle" font-size="11" fill="#fbbf24" letter-spacing="2" font-weight="700">SKILLS</text>
+          <text x="490" y="302" text-anchor="middle" font-size="10" fill="#fbbf24cc">in the backpack —</text>
+          <text x="490" y="316" text-anchor="middle" font-size="10" fill="#fbbf24cc">recipes carried along</text>
+
+          <!-- Arms — small visible gap to each hand circle -->
+          <rect x="325" y="246" width="80" height="24" rx="12" fill="#2dd4bf22" stroke="#2dd4bf88" stroke-width="1.5"/>
+          <rect x="575" y="246" width="80" height="24" rx="12" fill="#2dd4bf22" stroke="#2dd4bf88" stroke-width="1.5"/>
+
+          <!-- Left hand — circle outboard of the arm, wrench centered in the circle -->
+          <circle cx="295" cy="258" r="22" fill="#fbbf2422" stroke="#fbbf24" stroke-width="2"/>
+          <g transform="translate(289,250)">
+            <rect x="0" y="0" width="12" height="4" rx="1" fill="#fbbf24"/>
+            <rect x="4" y="4" width="4" height="12" rx="1" fill="#fbbf24"/>
+          </g>
+
+          <!-- Right hand — circle outboard of the arm, notebook centered in the circle -->
+          <circle cx="685" cy="258" r="22" fill="#34d39922" stroke="#34d399" stroke-width="2"/>
+          <g transform="translate(678,249)">
+            <rect width="14" height="18" rx="2" fill="#34d39933" stroke="#34d399" stroke-width="1.5"/>
+            <line x1="3" y1="5" x2="11" y2="5" stroke="#34d399" stroke-width="1"/>
+            <line x1="3" y1="9" x2="11" y2="9" stroke="#34d399" stroke-width="1"/>
+            <line x1="3" y1="13" x2="11" y2="13" stroke="#34d399" stroke-width="1"/>
+          </g>
+
+          <!-- ===== BOOKSHELF (RAG) — to the lower-right of figure ===== -->
+          <g transform="translate(750,300)">
+            <rect width="130" height="130" rx="4" fill="none" stroke="#22d3ee99" stroke-width="2"/>
+            <line x1="0" y1="44" x2="130" y2="44" stroke="#22d3ee88" stroke-width="1.5"/>
+            <line x1="0" y1="88" x2="130" y2="88" stroke="#22d3ee88" stroke-width="1.5"/>
+            <g fill="#22d3ee">
+              <rect x="6" y="6" width="9" height="34" opacity="0.6"/>
+              <rect x="17" y="4" width="9" height="36" opacity="0.4"/>
+              <rect x="28" y="8" width="9" height="32" opacity="0.6"/>
+              <rect x="39" y="6" width="9" height="34" opacity="0.5"/>
+              <rect x="50" y="4" width="9" height="36" opacity="0.6"/>
+              <rect x="61" y="8" width="9" height="32" opacity="0.4"/>
+              <rect x="72" y="6" width="9" height="34" opacity="0.6"/>
+              <rect x="83" y="4" width="9" height="36" opacity="0.5"/>
+              <rect x="94" y="8" width="9" height="32" opacity="0.4"/>
+              <rect x="105" y="6" width="9" height="34" opacity="0.6"/>
+              <rect x="116" y="4" width="9" height="36" opacity="0.5"/>
+              <rect x="6" y="50" width="9" height="34" opacity="0.5"/>
+              <rect x="17" y="48" width="9" height="36" opacity="0.6"/>
+              <rect x="28" y="52" width="9" height="32" opacity="0.4"/>
+              <rect x="39" y="48" width="9" height="36" opacity="0.6"/>
+              <rect x="50" y="50" width="9" height="34" opacity="0.5"/>
+              <rect x="61" y="48" width="9" height="36" opacity="0.4"/>
+              <rect x="72" y="52" width="9" height="32" opacity="0.6"/>
+              <rect x="83" y="48" width="9" height="36" opacity="0.5"/>
+              <rect x="94" y="50" width="9" height="34" opacity="0.6"/>
+              <rect x="105" y="48" width="9" height="36" opacity="0.4"/>
+              <rect x="116" y="50" width="9" height="34" opacity="0.6"/>
+              <rect x="6" y="94" width="9" height="34" opacity="0.4"/>
+              <rect x="17" y="92" width="9" height="36" opacity="0.6"/>
+              <rect x="28" y="96" width="9" height="32" opacity="0.5"/>
+              <rect x="39" y="92" width="9" height="36" opacity="0.4"/>
+              <rect x="50" y="94" width="9" height="34" opacity="0.6"/>
+              <rect x="61" y="92" width="9" height="36" opacity="0.5"/>
+              <rect x="72" y="96" width="9" height="32" opacity="0.6"/>
+              <rect x="83" y="92" width="9" height="36" opacity="0.4"/>
+              <rect x="94" y="94" width="9" height="34" opacity="0.6"/>
+              <rect x="105" y="92" width="9" height="36" opacity="0.5"/>
+              <rect x="116" y="94" width="9" height="34" opacity="0.6"/>
+            </g>
+          </g>
+
+          <!-- ===== LABELS WITH CONNECTING LINES ===== -->
+
+          <!-- MODEL (brain) — top-left -->
+          <text x="60" y="100" font-size="14" fill="#a78bfa" font-weight="700" letter-spacing="2">MODEL</text>
+          <text x="60" y="118" font-size="11" fill="#b9b9c4">the brain —</text>
+          <text x="60" y="132" font-size="11" fill="#b9b9c4">where thinking happens</text>
+          <path d="M 200 122 L 460 132" stroke="#a78bfa" stroke-dasharray="3 3" stroke-width="1.5" stroke-opacity="0.7"/>
+
+          <!-- CONTEXT (working memory / forehead) — top-right -->
+          <text x="920" y="100" text-anchor="end" font-size="14" fill="#60a5fa" font-weight="700" letter-spacing="2">CONTEXT</text>
+          <text x="920" y="118" text-anchor="end" font-size="11" fill="#b9b9c4">short-term memory —</text>
+          <text x="920" y="132" text-anchor="end" font-size="11" fill="#b9b9c4">what's held in mind right now</text>
+          <path d="M 740 130 L 520 132" stroke="#60a5fa" stroke-dasharray="3 3" stroke-width="1.5" stroke-opacity="0.7"/>
+
+          <!-- INPUTS (eyes) — upper-left -->
+          <text x="60" y="178" font-size="14" fill="#22d3ee" font-weight="700" letter-spacing="2">INPUTS</text>
+          <text x="60" y="196" font-size="11" fill="#b9b9c4">eyes &amp; ears —</text>
+          <text x="60" y="210" font-size="11" fill="#b9b9c4">text, images, audio</text>
+          <path d="M 200 198 L 455 170" stroke="#22d3ee" stroke-dasharray="3 3" stroke-width="1.5" stroke-opacity="0.7"/>
+
+          <!-- OUTPUT (mouth) — upper-right -->
+          <text x="920" y="178" text-anchor="end" font-size="14" fill="#fb923c" font-weight="700" letter-spacing="2">OUTPUT</text>
+          <text x="920" y="196" text-anchor="end" font-size="11" fill="#b9b9c4">the mouth —</text>
+          <text x="920" y="210" text-anchor="end" font-size="11" fill="#b9b9c4">what it writes back</text>
+          <path d="M 740 200 L 525 195" stroke="#fb923c" stroke-dasharray="3 3" stroke-width="1.5" stroke-opacity="0.7"/>
+
+          <!-- TOOLS (left hand) — middle-left -->
+          <text x="60" y="270" font-size="14" fill="#fbbf24" font-weight="700" letter-spacing="2">TOOLS</text>
+          <text x="60" y="288" font-size="11" fill="#b9b9c4">hands —</text>
+          <text x="60" y="302" font-size="11" fill="#b9b9c4">how it acts in the world</text>
+          <path d="M 200 282 L 275 262" stroke="#fbbf24" stroke-dasharray="3 3" stroke-width="1.5" stroke-opacity="0.7"/>
+
+          <!-- MEMORY (notebook in right hand) — middle-right -->
+          <text x="920" y="270" text-anchor="end" font-size="14" fill="#34d399" font-weight="700" letter-spacing="2">MEMORY</text>
+          <text x="920" y="288" text-anchor="end" font-size="11" fill="#b9b9c4">a journal in hand —</text>
+          <text x="920" y="302" text-anchor="end" font-size="11" fill="#b9b9c4">notes that persist</text>
+          <path d="M 740 282 L 705 262" stroke="#34d399" stroke-dasharray="3 3" stroke-width="1.5" stroke-opacity="0.7"/>
+
+          <!-- HARNESS (body) — lower-left -->
+          <text x="60" y="378" font-size="14" fill="#2dd4bf" font-weight="700" letter-spacing="2">HARNESS</text>
+          <text x="60" y="396" font-size="11" fill="#b9b9c4">the body itself —</text>
+          <text x="60" y="410" font-size="11" fill="#b9b9c4">scaffolding around</text>
+          <text x="60" y="424" font-size="11" fill="#b9b9c4">everything else</text>
+          <path d="M 200 396 L 395 380" stroke="#2dd4bf" stroke-dasharray="3 3" stroke-width="1.5" stroke-opacity="0.7"/>
+
+          <!-- RAG (library) — lower-right, label below the shelf -->
+          <text x="920" y="476" text-anchor="end" font-size="14" fill="#22d3ee" font-weight="700" letter-spacing="2">RAG</text>
+          <text x="920" y="494" text-anchor="end" font-size="11" fill="#b9b9c4">a library nearby —</text>
+          <text x="920" y="508" text-anchor="end" font-size="11" fill="#b9b9c4">knowledge to look up</text>
+          <text x="920" y="522" text-anchor="end" font-size="11" fill="#b9b9c4">on demand</text>
+          <path d="M 815 470 L 815 432" stroke="#22d3ee" stroke-dasharray="3 3" stroke-width="1.5" stroke-opacity="0.7"/>
+
+          <!-- Caption -->
+          <text x="490" y="548" text-anchor="middle" font-size="11" fill="#7c7c8a">Each part of this body maps to one piece of an AI agent. The rest of this guide takes them one at a time.</text>
+        </svg>
+      </div>
+
+      <div class="takeaway">
+        <div class="k">Where to next</div>
+        <p>Each tab in this guide unpacks one part of the body — the brain (<strong>Models</strong>), what fits in mind right now (<strong>Context</strong>), the body around it (<strong>Harness</strong>), the library it can consult (<strong>RAG</strong>), the journal it keeps (<strong>Memory</strong>), the recipe cards in the backpack (<strong>Skills</strong>), the gear bolted on (<strong>Plugins</strong> &amp; <strong>MCP</strong>), and where the data goes (<strong>Data</strong>). Number keys 1–9 (and 0) jump between them.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================== MODELS =================== -->
+  <section class="tabpanel" id="models">
+    <div class="panel">
+      <h2>Models</h2>
+      <p class="section-sub">A "model" is the brain. Different brains have different sizes, speeds, and costs. You pick the right brain for the job.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 360" width="980">
+          <!-- Three model cards -->
+          <defs>
+            <linearGradient id="haiku" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#34d399" stop-opacity="0.25"/>
+              <stop offset="1" stop-color="#34d399" stop-opacity="0.05"/>
+            </linearGradient>
+            <linearGradient id="sonnet" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#60a5fa" stop-opacity="0.25"/>
+              <stop offset="1" stop-color="#60a5fa" stop-opacity="0.05"/>
+            </linearGradient>
+            <linearGradient id="opus" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#a78bfa" stop-opacity="0.30"/>
+              <stop offset="1" stop-color="#a78bfa" stop-opacity="0.05"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Haiku -->
+          <g transform="translate(40,40)">
+            <rect width="280" height="280" rx="16" fill="url(#haiku)" stroke="#34d399" stroke-opacity="0.35"/>
+            <circle cx="60" cy="60" r="22" fill="#34d399" fill-opacity="0.2" stroke="#34d399" stroke-width="1.5"/>
+            <text x="60" y="66" text-anchor="middle" font-size="20" font-weight="700" fill="#34d399">H</text>
+            <text x="100" y="55" font-size="22" font-weight="700" fill="#ececf1">Haiku</text>
+            <text x="100" y="76" font-size="13" fill="#7c7c8a">Small &amp; fast</text>
+
+            <text x="24" y="130" font-size="11" fill="#7c7c8a" letter-spacing="2">SPEED</text>
+            <rect x="24" y="138" width="232" height="6" rx="3" fill="#ffffff10"/>
+            <rect x="24" y="138" width="220" height="6" rx="3" fill="#34d399"/>
+
+            <text x="24" y="170" font-size="11" fill="#7c7c8a" letter-spacing="2">SMARTS</text>
+            <rect x="24" y="178" width="232" height="6" rx="3" fill="#ffffff10"/>
+            <rect x="24" y="178" width="90" height="6" rx="3" fill="#34d399"/>
+
+            <text x="24" y="210" font-size="11" fill="#7c7c8a" letter-spacing="2">COST</text>
+            <rect x="24" y="218" width="232" height="6" rx="3" fill="#ffffff10"/>
+            <rect x="24" y="218" width="35" height="6" rx="3" fill="#34d399"/>
+
+            <text x="24" y="252" font-size="13" fill="#b9b9c4">Quick lookups, tagging,</text>
+            <text x="24" y="270" font-size="13" fill="#b9b9c4">simple chat, routing</text>
+          </g>
+
+          <!-- Sonnet -->
+          <g transform="translate(350,40)">
+            <rect width="280" height="280" rx="16" fill="url(#sonnet)" stroke="#60a5fa" stroke-opacity="0.35"/>
+            <circle cx="60" cy="60" r="22" fill="#60a5fa" fill-opacity="0.2" stroke="#60a5fa" stroke-width="1.5"/>
+            <text x="60" y="66" text-anchor="middle" font-size="20" font-weight="700" fill="#60a5fa">S</text>
+            <text x="100" y="55" font-size="22" font-weight="700" fill="#ececf1">Sonnet</text>
+            <text x="100" y="76" font-size="13" fill="#7c7c8a">Medium &amp; balanced</text>
+
+            <text x="24" y="130" font-size="11" fill="#7c7c8a" letter-spacing="2">SPEED</text>
+            <rect x="24" y="138" width="232" height="6" rx="3" fill="#ffffff10"/>
+            <rect x="24" y="138" width="150" height="6" rx="3" fill="#60a5fa"/>
+
+            <text x="24" y="170" font-size="11" fill="#7c7c8a" letter-spacing="2">SMARTS</text>
+            <rect x="24" y="178" width="232" height="6" rx="3" fill="#ffffff10"/>
+            <rect x="24" y="178" width="170" height="6" rx="3" fill="#60a5fa"/>
+
+            <text x="24" y="210" font-size="11" fill="#7c7c8a" letter-spacing="2">COST</text>
+            <rect x="24" y="218" width="232" height="6" rx="3" fill="#ffffff10"/>
+            <rect x="24" y="218" width="110" height="6" rx="3" fill="#60a5fa"/>
+
+            <text x="24" y="252" font-size="13" fill="#b9b9c4">Everyday work, writing,</text>
+            <text x="24" y="270" font-size="13" fill="#b9b9c4">analysis, most coding</text>
+          </g>
+
+          <!-- Opus -->
+          <g transform="translate(660,40)">
+            <rect width="280" height="280" rx="16" fill="url(#opus)" stroke="#a78bfa" stroke-opacity="0.45"/>
+            <circle cx="60" cy="60" r="22" fill="#a78bfa" fill-opacity="0.25" stroke="#a78bfa" stroke-width="1.5"/>
+            <text x="60" y="66" text-anchor="middle" font-size="20" font-weight="700" fill="#a78bfa">O</text>
+            <text x="100" y="55" font-size="22" font-weight="700" fill="#ececf1">Opus</text>
+            <text x="100" y="76" font-size="13" fill="#7c7c8a">Large &amp; deep</text>
+
+            <text x="24" y="130" font-size="11" fill="#7c7c8a" letter-spacing="2">SPEED</text>
+            <rect x="24" y="138" width="232" height="6" rx="3" fill="#ffffff10"/>
+            <rect x="24" y="138" width="85" height="6" rx="3" fill="#a78bfa"/>
+
+            <text x="24" y="170" font-size="11" fill="#7c7c8a" letter-spacing="2">SMARTS</text>
+            <rect x="24" y="178" width="232" height="6" rx="3" fill="#ffffff10"/>
+            <rect x="24" y="178" width="225" height="6" rx="3" fill="#a78bfa"/>
+
+            <text x="24" y="210" font-size="11" fill="#7c7c8a" letter-spacing="2">COST</text>
+            <rect x="24" y="218" width="232" height="6" rx="3" fill="#ffffff10"/>
+            <rect x="24" y="218" width="220" height="6" rx="3" fill="#a78bfa"/>
+
+            <text x="24" y="252" font-size="13" fill="#b9b9c4">Hard reasoning, research,</text>
+            <text x="24" y="270" font-size="13" fill="#b9b9c4">multi-step planning</text>
+          </g>
+        </svg>
+      </div>
+
+      <h3 style="margin: 28px 0 4px; font-size: 18px;">Where the brains come from</h3>
+      <p class="section-sub">Above is one company's lineup. There are several major sources — each with its own flavor.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 280" width="980">
+          <defs>
+            <linearGradient id="anthropic" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#a78bfa" stop-opacity="0.22"/>
+              <stop offset="1" stop-color="#a78bfa" stop-opacity="0.04"/>
+            </linearGradient>
+            <linearGradient id="openai" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#2dd4bf" stop-opacity="0.22"/>
+              <stop offset="1" stop-color="#2dd4bf" stop-opacity="0.04"/>
+            </linearGradient>
+            <linearGradient id="local" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#fbbf24" stop-opacity="0.22"/>
+              <stop offset="1" stop-color="#fbbf24" stop-opacity="0.04"/>
+            </linearGradient>
+            <linearGradient id="router" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#f472b6" stop-opacity="0.22"/>
+              <stop offset="1" stop-color="#f472b6" stop-opacity="0.04"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Anthropic -->
+          <g transform="translate(20,20)">
+            <rect width="220" height="240" rx="14" fill="url(#anthropic)" stroke="#a78bfa" stroke-opacity="0.40"/>
+            <circle cx="34" cy="38" r="18" fill="#a78bfa33" stroke="#a78bfa88"/>
+            <text x="34" y="44" text-anchor="middle" font-size="16" fill="#a78bfa" font-weight="700">A</text>
+            <text x="62" y="34" font-size="15" font-weight="700" fill="#ececf1">Anthropic</text>
+            <text x="62" y="50" font-size="11" fill="#7c7c8a">Maker of Claude</text>
+
+            <text x="18" y="84" font-size="10" fill="#7c7c8a" letter-spacing="2">EXAMPLE MODELS</text>
+            <g transform="translate(18,94)" font-size="12">
+              <rect width="184" height="26" rx="6" fill="#a78bfa1c" stroke="#a78bfa55"/>
+              <text x="10" y="17" fill="#ececf1">Claude Opus 4.7</text>
+              <text x="176" y="17" text-anchor="end" fill="#a78bfa" font-size="10">flagship</text>
+
+              <rect y="32" width="184" height="26" rx="6" fill="#a78bfa1c" stroke="#a78bfa55"/>
+              <text x="10" y="49" fill="#ececf1">Claude Sonnet 4.6</text>
+              <text x="176" y="49" text-anchor="end" fill="#a78bfa" font-size="10">workhorse</text>
+
+              <rect y="64" width="184" height="26" rx="6" fill="#a78bfa1c" stroke="#a78bfa55"/>
+              <text x="10" y="81" fill="#ececf1">Claude Haiku 4.5</text>
+              <text x="176" y="81" text-anchor="end" fill="#a78bfa" font-size="10">fast</text>
+            </g>
+
+            <text x="18" y="210" font-size="11" fill="#b9b9c4">Long context, writing,</text>
+            <text x="18" y="226" font-size="11" fill="#b9b9c4">careful instructions.</text>
+          </g>
+
+          <!-- OpenAI -->
+          <g transform="translate(260,20)">
+            <rect width="220" height="240" rx="14" fill="url(#openai)" stroke="#2dd4bf" stroke-opacity="0.40"/>
+            <circle cx="34" cy="38" r="18" fill="#2dd4bf33" stroke="#2dd4bf88"/>
+            <text x="34" y="44" text-anchor="middle" font-size="16" fill="#2dd4bf" font-weight="700">O</text>
+            <text x="62" y="34" font-size="15" font-weight="700" fill="#ececf1">OpenAI</text>
+            <text x="62" y="50" font-size="11" fill="#7c7c8a">Maker of GPT &amp; ChatGPT</text>
+
+            <text x="18" y="84" font-size="10" fill="#7c7c8a" letter-spacing="2">EXAMPLE MODELS</text>
+            <g transform="translate(18,94)" font-size="12">
+              <rect width="184" height="26" rx="6" fill="#2dd4bf1c" stroke="#2dd4bf55"/>
+              <text x="10" y="17" fill="#ececf1">GPT-5</text>
+              <text x="176" y="17" text-anchor="end" fill="#2dd4bf" font-size="10">flagship</text>
+
+              <rect y="32" width="184" height="26" rx="6" fill="#2dd4bf1c" stroke="#2dd4bf55"/>
+              <text x="10" y="49" fill="#ececf1">GPT-5 mini</text>
+              <text x="176" y="49" text-anchor="end" fill="#2dd4bf" font-size="10">cheap</text>
+
+              <rect y="64" width="184" height="26" rx="6" fill="#2dd4bf1c" stroke="#2dd4bf55"/>
+              <text x="10" y="81" fill="#ececf1">o4 (reasoning)</text>
+              <text x="176" y="81" text-anchor="end" fill="#2dd4bf" font-size="10">thinks first</text>
+            </g>
+
+            <text x="18" y="210" font-size="11" fill="#b9b9c4">Broad ecosystem, voice,</text>
+            <text x="18" y="226" font-size="11" fill="#b9b9c4">image generation.</text>
+          </g>
+
+          <!-- Local / open-source -->
+          <g transform="translate(500,20)">
+            <rect width="220" height="240" rx="14" fill="url(#local)" stroke="#fbbf24" stroke-opacity="0.40"/>
+            <rect x="22" y="24" width="26" height="26" rx="6" fill="#fbbf2433" stroke="#fbbf2488"/>
+            <text x="35" y="42" text-anchor="middle" font-size="14" fill="#fbbf24" font-weight="700">⌂</text>
+            <text x="62" y="34" font-size="15" font-weight="700" fill="#ececf1">Local / open-source</text>
+            <text x="62" y="50" font-size="11" fill="#7c7c8a">Run on your own hardware</text>
+
+            <text x="18" y="84" font-size="10" fill="#7c7c8a" letter-spacing="2">EXAMPLE MODELS</text>
+            <g transform="translate(18,94)" font-size="12">
+              <rect width="184" height="26" rx="6" fill="#fbbf241c" stroke="#fbbf2455"/>
+              <text x="10" y="17" fill="#ececf1">Qwen 3.6 (35B)</text>
+              <text x="176" y="17" text-anchor="end" fill="#fbbf24" font-size="10">Alibaba</text>
+
+              <rect y="32" width="184" height="26" rx="6" fill="#fbbf241c" stroke="#fbbf2455"/>
+              <text x="10" y="49" fill="#ececf1">Gemma 4</text>
+              <text x="176" y="49" text-anchor="end" fill="#fbbf24" font-size="10">Google</text>
+
+              <rect y="64" width="184" height="26" rx="6" fill="#fbbf241c" stroke="#fbbf2455"/>
+              <text x="10" y="81" fill="#ececf1">Llama 4</text>
+              <text x="176" y="81" text-anchor="end" fill="#fbbf24" font-size="10">Meta</text>
+            </g>
+
+            <text x="18" y="210" font-size="11" fill="#b9b9c4">Free per token. Private —</text>
+            <text x="18" y="226" font-size="11" fill="#b9b9c4">nothing leaves the LAN.</text>
+          </g>
+
+          <!-- OpenRouter -->
+          <g transform="translate(740,20)">
+            <rect width="220" height="240" rx="14" fill="url(#router)" stroke="#f472b6" stroke-opacity="0.40"/>
+            <rect x="22" y="24" width="26" height="26" rx="6" fill="#f472b633" stroke="#f472b688"/>
+            <text x="35" y="42" text-anchor="middle" font-size="14" fill="#f472b6" font-weight="700">⇄</text>
+            <text x="62" y="34" font-size="15" font-weight="700" fill="#ececf1">OpenRouter</text>
+            <text x="62" y="50" font-size="11" fill="#7c7c8a">A switchboard, not a model</text>
+
+            <text x="18" y="84" font-size="10" fill="#7c7c8a" letter-spacing="2">WHAT IT GIVES YOU</text>
+            <g transform="translate(18,94)" font-size="12">
+              <rect width="184" height="26" rx="6" fill="#f472b61c" stroke="#f472b655"/>
+              <text x="10" y="17" fill="#ececf1">One API → 300+ models</text>
+
+              <rect y="32" width="184" height="26" rx="6" fill="#f472b61c" stroke="#f472b655"/>
+              <text x="10" y="49" fill="#ececf1">Auto-failover</text>
+
+              <rect y="64" width="184" height="26" rx="6" fill="#f472b61c" stroke="#f472b655"/>
+              <text x="10" y="81" fill="#ececf1">Live price comparison</text>
+            </g>
+
+            <text x="18" y="210" font-size="11" fill="#b9b9c4">Mix providers without</text>
+            <text x="18" y="226" font-size="11" fill="#b9b9c4">juggling separate accounts.</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <span class="item"><span class="sw" style="background:#a78bfa"></span>Hosted by Anthropic</span>
+        <span class="item"><span class="sw" style="background:#2dd4bf"></span>Hosted by OpenAI</span>
+        <span class="item"><span class="sw" style="background:#fbbf24"></span>Self-hosted on your hardware</span>
+        <span class="item"><span class="sw" style="background:#f472b6"></span>Router / aggregator</span>
+      </div>
+
+      <div class="grid three" style="margin-top:22px">
+        <div class="card">
+          <div class="label">Same family, different sizes</div>
+          <h3>Pick the right brain</h3>
+          <p>Don't use a brain surgeon to read your mail. A small model answers quickly and cheaply; a large one reasons through hard problems. Most workflows mix both.</p>
+        </div>
+        <div class="card">
+          <div class="label">Many makers</div>
+          <h3>Not just one company</h3>
+          <p>Anthropic (Claude), OpenAI (GPT), Google (Gemini), Meta (Llama), and local open-source models all exist. They behave differently — like authors with different writing styles.</p>
+        </div>
+        <div class="card">
+          <div class="label">Multimodal</div>
+          <h3>Words aren't all</h3>
+          <p>Modern models also see images, hear audio, and read documents. The brain is the same; it just has more senses wired in.</p>
+        </div>
+      </div>
+
+      <h3 style="margin: 36px 0 4px; font-size: 18px;">Thinking — models that reason before they answer</h3>
+      <p class="section-sub">Some models "think out loud" before responding. They generate a private chain of reasoning — sometimes visible to you, sometimes hidden — working through the problem step by step, then write the final answer. Slower and more expensive, but much better at hard problems.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 340" width="980">
+          <defs>
+            <marker id="mod-arr-blue" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0 0 L6 4 L0 8 z" fill="#60a5fa"/>
+            </marker>
+            <marker id="mod-arr-purple" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0 0 L6 4 L0 8 z" fill="#a78bfa"/>
+            </marker>
+          </defs>
+
+          <text x="40" y="22" font-size="12" fill="#7c7c8a" letter-spacing="2">SAME QUESTION · TWO KINDS OF MODEL</text>
+
+          <!-- LEFT: Regular -->
+          <g transform="translate(40,40)">
+            <rect width="440" height="290" rx="14" fill="#60a5fa08" stroke="#60a5fa44"/>
+            <text x="220" y="32" text-anchor="middle" font-size="13" fill="#60a5fa" font-weight="700" letter-spacing="2">REGULAR MODEL</text>
+
+            <rect x="20" y="52" width="400" height="50" rx="8" fill="#60a5fa22" stroke="#60a5fa66"/>
+            <text x="34" y="70" font-size="9" fill="#7c7c8a" letter-spacing="2">YOU ASK</text>
+            <text x="34" y="90" font-size="12" fill="#ececf1">"Plan a 3-day Tokyo trip on $1500"</text>
+
+            <line x1="220" y1="112" x2="220" y2="142" stroke="#60a5fa" stroke-width="2" marker-end="url(#mod-arr-blue)"/>
+            <text x="232" y="130" font-size="10" fill="#7c7c8a">(no thinking step)</text>
+
+            <rect x="20" y="152" width="400" height="106" rx="8" fill="#60a5fa11" stroke="#60a5fa44"/>
+            <text x="34" y="170" font-size="9" fill="#7c7c8a" letter-spacing="2">MODEL ANSWERS</text>
+            <text x="34" y="190" font-size="11" fill="#ececf1">Day 1: Shibuya, Harajuku</text>
+            <text x="34" y="208" font-size="11" fill="#ececf1">Day 2: Asakusa, Akihabara</text>
+            <text x="34" y="226" font-size="11" fill="#ececf1">Day 3: Tsukiji, Ginza</text>
+            <text x="34" y="248" font-size="10" fill="#fb7185">⚠ no budget math — may exceed $1500</text>
+
+            <text x="220" y="280" text-anchor="middle" font-size="11" fill="#60a5fa">fast · cheap · single-shot</text>
+          </g>
+
+          <!-- RIGHT: Reasoning -->
+          <g transform="translate(500,40)">
+            <rect width="440" height="290" rx="14" fill="#a78bfa08" stroke="#a78bfa44"/>
+            <text x="220" y="32" text-anchor="middle" font-size="13" fill="#a78bfa" font-weight="700" letter-spacing="2">REASONING MODEL</text>
+
+            <rect x="20" y="52" width="400" height="50" rx="8" fill="#a78bfa22" stroke="#a78bfa66"/>
+            <text x="34" y="70" font-size="9" fill="#7c7c8a" letter-spacing="2">YOU ASK</text>
+            <text x="34" y="90" font-size="12" fill="#ececf1">"Plan a 3-day Tokyo trip on $1500"</text>
+
+            <rect x="20" y="112" width="400" height="84" rx="8" fill="#a78bfa14" stroke="#a78bfa55" stroke-dasharray="4 3"/>
+            <text x="34" y="130" font-size="9" fill="#a78bfa" letter-spacing="2">THINKING SILENTLY...</text>
+            <text x="34" y="148" font-size="10" fill="#b9b9c4">· round-trip flight ≈ $1000</text>
+            <text x="34" y="164" font-size="10" fill="#b9b9c4">· $500 left for hotel + food + activities</text>
+            <text x="34" y="178" font-size="10" fill="#b9b9c4">· $170/day → hostel + cheap eats fits</text>
+            <text x="34" y="192" font-size="10" fill="#b9b9c4">· cross-check the total before answering</text>
+
+            <rect x="20" y="206" width="400" height="54" rx="8" fill="#a78bfa11" stroke="#a78bfa44"/>
+            <text x="34" y="224" font-size="9" fill="#7c7c8a" letter-spacing="2">MODEL ANSWERS</text>
+            <text x="34" y="242" font-size="11" fill="#ececf1">Hostel + cheap eats plan, specific</text>
+            <text x="34" y="256" font-size="11" fill="#ececf1">neighborhoods, $1473 total ✓</text>
+
+            <text x="220" y="280" text-anchor="middle" font-size="11" fill="#a78bfa">slow · expensive · multi-step</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="grid three" style="margin-top:22px">
+        <div class="card">
+          <div class="label">When it pays off</div>
+          <h3>Hard problems with chained steps</h3>
+          <p>Reasoning models are worth the cost on problems where multiple steps have to chain together cleanly: complex math, multi-hop logic, code that needs to handle edge cases, planning under constraints. On simple Q&amp;A or short content, they're slower and pricier for no real win.</p>
+        </div>
+        <div class="card">
+          <div class="label">The price</div>
+          <h3>5–10× slower, 5–20× the bill</h3>
+          <p>Reasoning models run noticeably slower — sometimes minutes per response — and the provider bills for the invisible thinking tokens too, often 5–20× the visible output. A reasoning call on a hard problem can land at $5–50 per request.</p>
+        </div>
+        <div class="card">
+          <div class="label">Real examples</div>
+          <h3>Same trick, different flavors</h3>
+          <p>OpenAI's o-series (o3, o4) emit thinking before answering. Anthropic's Claude has extended thinking mode. Google's Gemini has deep-thinking modes. All share the same trick: spend more tokens thinking, get a more accurate answer.</p>
+        </div>
+      </div>
+
+      <div class="takeaway">
+        <div class="k">The takeaway</div>
+        <p>A model is rented intelligence. You pay per word in and per word out. Bigger model = smarter, slower, more expensive. Reasoning models add a second dial: spend more on thinking, get a better answer. Smart product design uses the cheapest model that gets the job right — and reaches for reasoning only when the problem needs it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================== TOKENS =================== -->
+  <section class="tabpanel" id="tokens">
+    <div class="panel">
+      <h2>Tokens</h2>
+      <p class="section-sub">A <strong>token</strong> is a chunk of text — usually a whole word, sometimes a piece of one. It's the unit of measurement for almost everything that matters: how fast a model is, how much fits in the context window, and what each request costs.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 240" width="980">
+          <text x="40" y="22" font-size="12" fill="#7c7c8a" letter-spacing="2">HOW MODELS COUNT TEXT</text>
+
+          <text x="40" y="52" font-size="10" fill="#7c7c8a" letter-spacing="2">TEXT YOU TYPE</text>
+          <text x="40" y="84" font-size="20" font-family="JetBrains Mono, monospace" fill="#ececf1">"The quick brown fox jumps over the lazy dog."</text>
+
+          <line x1="490" y1="100" x2="490" y2="126" stroke="#fb923c" stroke-width="2"/>
+          <polygon points="486,126 494,126 490,134" fill="#fb923c"/>
+          <text x="504" y="118" font-size="11" fill="#fb923c">becomes:</text>
+
+          <text x="40" y="150" font-size="10" fill="#fb923c" letter-spacing="2">WHAT THE MODEL SEES</text>
+
+          <g font-family="JetBrains Mono, monospace" font-size="14" fill="#ececf1">
+            <rect x="40" y="162" width="50" height="32" rx="6" fill="#fb923c33" stroke="#fb923c66"/>
+            <text x="65" y="182" text-anchor="middle">The</text>
+            <rect x="96" y="162" width="68" height="32" rx="6" fill="#fb923c33" stroke="#fb923c66"/>
+            <text x="130" y="182" text-anchor="middle">quick</text>
+            <rect x="170" y="162" width="74" height="32" rx="6" fill="#fb923c33" stroke="#fb923c66"/>
+            <text x="207" y="182" text-anchor="middle">brown</text>
+            <rect x="250" y="162" width="50" height="32" rx="6" fill="#fb923c33" stroke="#fb923c66"/>
+            <text x="275" y="182" text-anchor="middle">fox</text>
+            <rect x="306" y="162" width="74" height="32" rx="6" fill="#fb923c33" stroke="#fb923c66"/>
+            <text x="343" y="182" text-anchor="middle">jumps</text>
+            <rect x="386" y="162" width="62" height="32" rx="6" fill="#fb923c33" stroke="#fb923c66"/>
+            <text x="417" y="182" text-anchor="middle">over</text>
+            <rect x="454" y="162" width="50" height="32" rx="6" fill="#fb923c33" stroke="#fb923c66"/>
+            <text x="479" y="182" text-anchor="middle">the</text>
+            <rect x="510" y="162" width="56" height="32" rx="6" fill="#fb923c33" stroke="#fb923c66"/>
+            <text x="538" y="182" text-anchor="middle">lazy</text>
+            <rect x="572" y="162" width="52" height="32" rx="6" fill="#fb923c33" stroke="#fb923c66"/>
+            <text x="598" y="182" text-anchor="middle">dog</text>
+            <rect x="630" y="162" width="30" height="32" rx="6" fill="#fb923c33" stroke="#fb923c66"/>
+            <text x="645" y="182" text-anchor="middle">.</text>
+          </g>
+
+          <text x="490" y="220" text-anchor="middle" font-size="11" fill="#7c7c8a">10 tokens · 9 words · 45 characters · roughly 4–5 characters per token</text>
+        </svg>
+      </div>
+
+      <div class="grid three" style="margin-top:22px">
+        <div class="card">
+          <div class="label">The unit</div>
+          <h3>Words, usually — sometimes pieces</h3>
+          <p>Common words map to one token each ("the" → 1). Rare or compound words split into pieces: "tokenization" → 2 tokens, "antidisestablishmentarianism" → 7. Punctuation and spaces count too.</p>
+        </div>
+        <div class="card">
+          <div class="label">Two sides of the bill</div>
+          <h3>Tokens in, tokens out</h3>
+          <p>Every request has two prices: tokens <em>in</em> (what you send the model) and tokens <em>out</em> (what it writes back). Output is typically 3–5× more expensive than input — generating is harder than reading.</p>
+        </div>
+        <div class="card">
+          <div class="label">Scale check</div>
+          <h3>1 million tokens ≈ 1,500 pages</h3>
+          <p>A long memo: ~1K tokens. A novel chapter: 5–10K. A whole paperback: ~100K. An encyclopedia: 10M+. When a model advertises "200K context," that's roughly 300 pages it can hold at once.</p>
+        </div>
+      </div>
+
+      <h3 style="margin: 36px 0 4px; font-size: 18px;">What it costs</h3>
+      <p class="section-sub">Prices vary wildly — even within one provider. Below: per-million-token pricing for representative models, with concrete examples of what it costs to push a 300-page book through each.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 252" width="980">
+          <text x="40" y="22" font-size="12" fill="#7c7c8a" letter-spacing="2">PER 1 MILLION TOKENS · APPROXIMATE LIST PRICING</text>
+
+          <text x="56" y="58" font-size="10" fill="#7c7c8a" letter-spacing="2">MODEL</text>
+          <text x="380" y="58" font-size="10" fill="#7c7c8a" letter-spacing="2" text-anchor="middle">INPUT</text>
+          <text x="510" y="58" font-size="10" fill="#7c7c8a" letter-spacing="2" text-anchor="middle">OUTPUT</text>
+          <text x="700" y="58" font-size="10" fill="#7c7c8a" letter-spacing="2" text-anchor="middle">READ A 300-PAGE BOOK</text>
+          <text x="880" y="58" font-size="10" fill="#7c7c8a" letter-spacing="2" text-anchor="middle">WRITE ONE</text>
+
+          <line x1="40" y1="68" x2="940" y2="68" stroke="rgba(255,255,255,0.10)"/>
+
+          <!-- Gemini Flash -->
+          <rect x="40" y="78" width="900" height="36" rx="8" fill="#2dd4bf08" stroke="rgba(255,255,255,0.06)"/>
+          <text x="56" y="98" font-size="13" fill="#ececf1" font-weight="600">Gemini Flash</text>
+          <text x="56" y="110" font-size="10" fill="#7c7c8a">small, very fast</text>
+          <text x="380" y="103" font-size="13" fill="#2dd4bf" text-anchor="middle" font-weight="600">$0.15</text>
+          <text x="510" y="103" font-size="13" fill="#2dd4bf" text-anchor="middle" font-weight="600">$0.60</text>
+          <text x="700" y="103" font-size="13" fill="#ececf1" text-anchor="middle">~2¢</text>
+          <text x="880" y="103" font-size="13" fill="#ececf1" text-anchor="middle">~9¢</text>
+
+          <!-- Haiku -->
+          <rect x="40" y="120" width="900" height="36" rx="8" fill="#34d39908" stroke="rgba(255,255,255,0.06)"/>
+          <text x="56" y="140" font-size="13" fill="#ececf1" font-weight="600">Claude Haiku</text>
+          <text x="56" y="152" font-size="10" fill="#7c7c8a">small &amp; fast</text>
+          <text x="380" y="145" font-size="13" fill="#34d399" text-anchor="middle" font-weight="600">$0.80</text>
+          <text x="510" y="145" font-size="13" fill="#34d399" text-anchor="middle" font-weight="600">$4</text>
+          <text x="700" y="145" font-size="13" fill="#ececf1" text-anchor="middle">~12¢</text>
+          <text x="880" y="145" font-size="13" fill="#ececf1" text-anchor="middle">~60¢</text>
+
+          <!-- Sonnet -->
+          <rect x="40" y="162" width="900" height="36" rx="8" fill="#60a5fa08" stroke="rgba(255,255,255,0.06)"/>
+          <text x="56" y="182" font-size="13" fill="#ececf1" font-weight="600">Claude Sonnet</text>
+          <text x="56" y="194" font-size="10" fill="#7c7c8a">balanced workhorse</text>
+          <text x="380" y="187" font-size="13" fill="#60a5fa" text-anchor="middle" font-weight="600">$3</text>
+          <text x="510" y="187" font-size="13" fill="#60a5fa" text-anchor="middle" font-weight="600">$15</text>
+          <text x="700" y="187" font-size="13" fill="#ececf1" text-anchor="middle">~45¢</text>
+          <text x="880" y="187" font-size="13" fill="#ececf1" text-anchor="middle">~$2.25</text>
+
+          <!-- Opus -->
+          <rect x="40" y="204" width="900" height="36" rx="8" fill="#a78bfa14" stroke="rgba(255,255,255,0.10)"/>
+          <text x="56" y="224" font-size="13" fill="#ececf1" font-weight="600">Claude Opus</text>
+          <text x="56" y="236" font-size="10" fill="#7c7c8a">flagship reasoning</text>
+          <text x="380" y="229" font-size="13" fill="#a78bfa" text-anchor="middle" font-weight="600">$15</text>
+          <text x="510" y="229" font-size="13" fill="#a78bfa" text-anchor="middle" font-weight="600">$75</text>
+          <text x="700" y="229" font-size="13" fill="#ececf1" text-anchor="middle">~$2.25</text>
+          <text x="880" y="229" font-size="13" fill="#ececf1" text-anchor="middle">~$11.25</text>
+        </svg>
+      </div>
+
+      <div class="grid two" style="margin-top:18px">
+        <div class="card">
+          <div class="label">Tier matters more than maker</div>
+          <h3>Pick the right tier first</h3>
+          <p>Within any provider, the small tier is 10–50× cheaper than the flagship. Most production workflows split jobs across tiers — small models for routing, classification, and easy work; big models only for the hard reasoning. Most of the cost lives in routing decisions, not model choice.</p>
+        </div>
+        <div class="card">
+          <div class="label">Where the bill lands</div>
+          <h3>Output dominates the cost</h3>
+          <p>Apps usually send much more input than they get back — but because each output token costs 3–5× more, the bill often splits closer to 50/50. Worth optimizing both: trim what you send, and tell the model to be concise.</p>
+        </div>
+      </div>
+
+      <h3 style="margin: 36px 0 4px; font-size: 18px;">Caching — paying less when nothing changes</h3>
+      <p class="section-sub">Reading a long prompt is expensive and slow. So providers <em>cache</em> the work they did on the steady parts — your system prompt, early conversation, long reference documents — and charge a fraction of the usual price when those parts are unchanged on the next call. You still pay; you just pay much less. The catch: caches don't last forever, and different providers run different stopwatches.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 320" width="980">
+          <text x="40" y="22" font-size="12" fill="#7c7c8a" letter-spacing="2">HOW LONG THE PROVIDER REMEMBERS YOUR PREFIX</text>
+
+          <g font-size="11" fill="#7c7c8a">
+            <text x="240" y="56" text-anchor="middle">5 min</text>
+            <text x="320" y="56" text-anchor="middle">10 min</text>
+            <text x="480" y="56" text-anchor="middle">1 hour</text>
+            <text x="680" y="56" text-anchor="middle">1 day</text>
+            <text x="900" y="56" text-anchor="middle">∞</text>
+          </g>
+
+          <g stroke="rgba(255,255,255,0.10)" stroke-dasharray="2 4">
+            <line x1="240" y1="64" x2="240" y2="282"/>
+            <line x1="320" y1="64" x2="320" y2="282"/>
+            <line x1="480" y1="64" x2="480" y2="282"/>
+            <line x1="680" y1="64" x2="680" y2="282"/>
+            <line x1="900" y1="64" x2="900" y2="282"/>
+          </g>
+
+          <text x="112" y="100" text-anchor="end" font-size="13" fill="#ececf1" font-weight="600">Anthropic API</text>
+          <text x="112" y="115" text-anchor="end" font-size="10" fill="#7c7c8a">developer access</text>
+          <rect x="120" y="92" width="120" height="14" rx="3" fill="#a78bfa" fill-opacity="0.85"/>
+          <text x="246" y="103" font-size="10" fill="#a78bfa" font-weight="700">5 minutes</text>
+
+          <text x="112" y="136" text-anchor="end" font-size="13" fill="#ececf1" font-weight="600">Claude Pro / Max</text>
+          <text x="112" y="151" text-anchor="end" font-size="10" fill="#7c7c8a">Anthropic plans</text>
+          <rect x="120" y="128" width="360" height="14" rx="3" fill="#a78bfa" fill-opacity="0.85"/>
+          <text x="486" y="139" font-size="10" fill="#a78bfa" font-weight="700">1 hour</text>
+
+          <text x="112" y="171" text-anchor="end" font-size="13" fill="#ececf1" font-weight="600">GPT</text>
+          <text x="112" y="186" text-anchor="end" font-size="10" fill="#7c7c8a">OpenAI</text>
+          <rect x="120" y="164" width="200" height="14" rx="3" fill="#2dd4bf" fill-opacity="0.85"/>
+          <text x="326" y="175" font-size="10" fill="#2dd4bf">~5–10 min · automatic, no config</text>
+
+          <text x="112" y="215" text-anchor="end" font-size="13" fill="#ececf1" font-weight="600">Gemini</text>
+          <text x="112" y="230" text-anchor="end" font-size="10" fill="#7c7c8a">Google</text>
+          <rect x="120" y="208" width="120" height="14" rx="3" fill="#60a5fa" fill-opacity="0.85"/>
+          <text x="246" y="219" font-size="10" fill="#60a5fa">implicit (a few minutes)</text>
+          <rect x="120" y="228" width="600" height="14" rx="3" fill="#60a5fa" fill-opacity="0.18" stroke="#60a5fa" stroke-opacity="0.65" stroke-dasharray="4 3"/>
+          <text x="726" y="239" font-size="10" fill="#60a5fa">explicit caching · configurable TTL</text>
+
+          <text x="112" y="263" text-anchor="end" font-size="13" fill="#ececf1" font-weight="600">Local</text>
+          <text x="112" y="278" text-anchor="end" font-size="10" fill="#7c7c8a">open-source</text>
+          <rect x="120" y="256" width="780" height="14" rx="3" fill="#fbbf24" fill-opacity="0.85"/>
+          <text x="510" y="267" font-size="10" fill="#15151c" text-anchor="middle" font-weight="700">stays as long as your server stays warm — no provider expiry</text>
+
+          <text x="490" y="305" text-anchor="middle" font-size="11" fill="#7c7c8a">Past the end of the bar, the cache is gone — the next request re-reads the whole prefix from scratch.</text>
+        </svg>
+      </div>
+
+      <div class="grid three" style="margin-top:18px">
+        <div class="card">
+          <span class="pill blue" style="margin-bottom:10px">What gets cached</span>
+          <h3>Only the prefix</h3>
+          <p>Just the stable run of text at the start of your prompt — system prompt, early conversation, reference documents. The model's reply, your next question, and anything that changes flows fresh through every time.</p>
+        </div>
+        <div class="card">
+          <span class="pill green" style="margin-bottom:10px">Why it matters</span>
+          <h3>Cheaper and faster</h3>
+          <p>A cache hit costs roughly 10–50% of a cache miss and starts streaming back in a fraction of the latency. On long contexts — say a 100-page document the agent keeps consulting — the savings change what's economically possible.</p>
+          <p style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);color:var(--fg-2);font-size:13px"><strong style="color:var(--rose)">Where it goes wrong:</strong> if your harness reshuffles tools or memories at the start of each turn, you blow the cache every time and pay full price. Stable order is everything.</p>
+        </div>
+        <div class="card">
+          <span class="pill amber" style="margin-bottom:10px">What kills it</span>
+          <h3>Time, or any edit to the prefix</h3>
+          <p>Two things invalidate a cache: the clock running out (the bar above), or any change to the cached text. Adding one word to your system prompt forces a full re-read from byte one.</p>
+        </div>
+      </div>
+
+      <div class="takeaway">
+        <div class="k">The takeaway</div>
+        <p>Tokens are the unit of currency in AI. Everything you care about — speed, cost, what fits in the context window — is measured in them. The cheapest performance win in most agents isn't paying for a smarter model; it's sending fewer tokens, and keeping the prefix steady so caching can work.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================== CONTEXT =================== -->
+  <section class="tabpanel" id="context">
+    <div class="panel">
+      <h2>Context</h2>
+      <p class="section-sub">A model has no memory of yesterday. Every time you talk to it, you hand it a stack of paper called "context." That stack has a maximum size — and reading a thick stack gets sloppy near the middle.</p>
+
+      <!-- Context window diagram -->
+      <div class="diagram">
+        <svg viewBox="0 0 980 320" width="980">
+          <defs>
+            <linearGradient id="ctxfill" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stop-color="#60a5fa" stop-opacity="0.35"/>
+              <stop offset="1" stop-color="#a78bfa" stop-opacity="0.35"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Section 1: the window with segments -->
+          <text x="40" y="22" font-size="12" fill="#7c7c8a" letter-spacing="2">THE CONTEXT WINDOW — EVERYTHING THE MODEL CAN "SEE" RIGHT NOW</text>
+
+          <rect x="40" y="40" width="900" height="84" rx="12" fill="#15151c" stroke="rgba(255,255,255,0.14)"/>
+          <rect x="40" y="40" width="760" height="84" rx="12" fill="url(#ctxfill)" stroke="none"/>
+
+          <g font-size="11" fill="#ececf1" text-anchor="middle">
+            <!-- Instructions -->
+            <rect x="48" y="48" width="90" height="68" rx="8" fill="#a78bfa22" stroke="#a78bfa66"/>
+            <text x="93" y="76" font-weight="600">Instructions</text>
+            <text x="93" y="94" fill="#b9b9c4" font-size="9">house rules</text>
+
+            <!-- Tools -->
+            <rect x="142" y="48" width="100" height="68" rx="8" fill="#2dd4bf22" stroke="#2dd4bf66"/>
+            <text x="192" y="76" font-weight="600" font-size="12">Tools</text>
+            <text x="192" y="94" fill="#b9b9c4" font-size="9">what it can do</text>
+
+            <!-- Skills -->
+            <rect x="246" y="48" width="70" height="68" rx="8" fill="#fbbf2422" stroke="#fbbf2466"/>
+            <text x="281" y="76" font-weight="600">Skills</text>
+            <text x="281" y="94" fill="#b9b9c4" font-size="9">loaded</text>
+
+            <!-- Memory -->
+            <rect x="320" y="48" width="64" height="68" rx="8" fill="#34d39922" stroke="#34d39966"/>
+            <text x="352" y="76" font-weight="600">Memory</text>
+            <text x="352" y="94" fill="#b9b9c4" font-size="9">notes</text>
+
+            <!-- Conversation -->
+            <rect x="388" y="48" width="170" height="68" rx="8" fill="#60a5fa22" stroke="#60a5fa66"/>
+            <text x="473" y="76" font-weight="600" font-size="12">Conversation</text>
+            <text x="473" y="94" fill="#b9b9c4" font-size="9">your back-and-forth</text>
+
+            <!-- Documents -->
+            <rect x="562" y="48" width="160" height="68" rx="8" fill="#f472b622" stroke="#f472b666"/>
+            <text x="642" y="76" font-weight="600" font-size="12">Documents</text>
+            <text x="642" y="94" fill="#b9b9c4" font-size="9">files, search hits</text>
+
+            <!-- Question -->
+            <rect x="726" y="48" width="70" height="68" rx="8" fill="#fb718522" stroke="#fb718566"/>
+            <text x="761" y="76" font-weight="600">Question</text>
+            <text x="761" y="94" fill="#b9b9c4" font-size="9">your turn</text>
+
+            <!-- Empty -->
+            <rect x="800" y="48" width="132" height="68" rx="8" stroke-dasharray="4 4" fill="none" stroke="rgba(255,255,255,0.20)"/>
+            <text x="866" y="80" fill="#7c7c8a">empty</text>
+            <text x="866" y="98" fill="#7c7c8a" font-size="10">room left</text>
+          </g>
+
+          <!-- Section 2: capacity bar -->
+          <text x="40" y="178" font-size="12" fill="#7c7c8a" letter-spacing="2">SIZE LIMIT — MEASURED IN "TOKENS" (ROUGHLY: WORDS)</text>
+
+          <!-- Tick labels above the bar -->
+          <g font-size="11" fill="#7c7c8a">
+            <text x="40" y="208" text-anchor="start">0</text>
+            <text x="220" y="208" text-anchor="middle">200K</text>
+            <text x="490" y="208" text-anchor="middle">500K</text>
+            <text x="940" y="208" text-anchor="end">1M tokens</text>
+          </g>
+
+          <!-- Bar -->
+          <rect x="40" y="220" width="900" height="22" rx="6" fill="#1c1c25" stroke="rgba(255,255,255,0.10)"/>
+          <rect x="40" y="220" width="760" height="22" rx="6" fill="url(#ctxfill)"/>
+
+          <!-- Tick marks (short, above bar only) -->
+          <g stroke="#7c7c8a" stroke-dasharray="3 3">
+            <line x1="220" y1="214" x2="220" y2="220"/>
+            <line x1="490" y1="214" x2="490" y2="220"/>
+            <line x1="940" y1="214" x2="940" y2="220"/>
+          </g>
+
+          <!-- Below-bar references -->
+          <g font-size="10" fill="#7c7c8a">
+            <text x="220" y="258" text-anchor="middle">~150 pages</text>
+            <text x="940" y="258" text-anchor="end">~750 pages</text>
+          </g>
+
+          <text x="490" y="294" font-size="13" fill="#ececf1" text-anchor="middle" font-weight="600">~84% full</text>
+        </svg>
+      </div>
+
+      <div class="grid two" style="margin-top: 22px">
+        <!-- Context rot diagram -->
+        <div class="diagram" style="flex-direction:column;align-items:stretch">
+          <div style="margin-bottom:10px">
+            <span class="pill amber">Context rot</span>
+            <span style="color:var(--muted);font-size:13px;margin-left:8px">performance degrades as the context fills up</span>
+          </div>
+          <svg viewBox="0 0 460 240" width="100%">
+            <!-- axes -->
+            <line x1="40" y1="200" x2="440" y2="200" stroke="#ffffff22"/>
+            <line x1="40" y1="20" x2="40" y2="200" stroke="#ffffff22"/>
+            <text x="40" y="220" font-size="11" fill="#7c7c8a">0% full</text>
+            <text x="240" y="220" font-size="11" fill="#7c7c8a" text-anchor="middle">how full the context is →</text>
+            <text x="440" y="220" font-size="11" fill="#7c7c8a" text-anchor="end">100% full</text>
+            <text x="34" y="30" font-size="10" fill="#7c7c8a" text-anchor="end">100%</text>
+            <text x="34" y="200" font-size="10" fill="#7c7c8a" text-anchor="end">0%</text>
+            <text x="240" y="14" font-size="12" fill="#ececf1" text-anchor="middle" font-weight="600">Model accuracy as the context fills up</text>
+
+            <!-- Background zones — green to 50%, amber 50–70%, red 70–100% -->
+            <rect x="40" y="20" width="200" height="180" fill="#34d39908"/>
+            <rect x="240" y="20" width="80" height="180" fill="#fbbf2410"/>
+            <rect x="320" y="20" width="120" height="180" fill="#fb718512"/>
+
+            <!-- 50% inflection line -->
+            <line x1="240" y1="20" x2="240" y2="200" stroke="#fb7185" stroke-opacity="0.35" stroke-dasharray="3 3"/>
+
+            <!-- Curve: flat plateau to 50%, then sharp drop -->
+            <path d="M40 30 L240 32 Q 260 32, 280 70 Q 320 122, 360 162 Q 400 188, 440 196"
+                  stroke="#fbbf24" stroke-width="3" fill="none"/>
+
+            <!-- Zone labels -->
+            <text x="140" y="60" font-size="11" fill="#34d399" text-anchor="middle" font-weight="600">sharp</text>
+            <text x="280" y="106" font-size="11" fill="#fbbf24" text-anchor="middle" font-weight="600">cliff</text>
+            <text x="380" y="172" font-size="11" fill="#fb7185" text-anchor="middle" font-weight="600">struggling</text>
+
+            <!-- Dots -->
+            <circle cx="140" cy="31" r="4" fill="#34d399"/>
+            <circle cx="290" cy="86" r="4" fill="#fbbf24"/>
+            <circle cx="400" cy="188" r="4" fill="#fb7185"/>
+
+            <!-- 50% tick label -->
+            <text x="240" y="14" font-size="9" fill="#fb7185" text-anchor="middle" letter-spacing="1">50%</text>
+          </svg>
+          <p style="color:var(--fg-2);font-size:13px;margin:10px 0 0">
+            Below ~50% fullness the model stays sharp. Cross that line and the drop is steep — by 70% you're getting noticeably slower, less reliable answers, and near 100% the model starts missing things outright. This is why "just dump everything in" stops working.
+          </p>
+        </div>
+
+        <!-- Compaction -->
+        <div class="diagram" style="flex-direction:column;align-items:stretch">
+          <div style="margin-bottom:10px">
+            <span class="pill blue">Compaction</span>
+            <span style="color:var(--muted);font-size:13px;margin-left:8px">how agents handle long conversations</span>
+          </div>
+          <svg viewBox="0 0 460 240" width="100%">
+            <!-- Stack of messages getting compressed -->
+            <g transform="translate(20,30)">
+              <rect width="180" height="18" rx="4" fill="#60a5fa33" stroke="#60a5fa66"/>
+              <rect y="24" width="180" height="18" rx="4" fill="#60a5fa33" stroke="#60a5fa66"/>
+              <rect y="48" width="180" height="18" rx="4" fill="#60a5fa33" stroke="#60a5fa66"/>
+              <rect y="72" width="180" height="18" rx="4" fill="#60a5fa33" stroke="#60a5fa66"/>
+              <rect y="96" width="180" height="18" rx="4" fill="#60a5fa33" stroke="#60a5fa66"/>
+              <rect y="120" width="180" height="18" rx="4" fill="#60a5fa33" stroke="#60a5fa66"/>
+              <rect y="144" width="180" height="18" rx="4" fill="#60a5fa33" stroke="#60a5fa66"/>
+              <text x="90" y="180" text-anchor="middle" font-size="11" fill="#7c7c8a">long conversation</text>
+            </g>
+            <!-- arrow -->
+            <g transform="translate(220,100)">
+              <path d="M0 10 L40 10" stroke="#a78bfa" stroke-width="2" marker-end="url(#arr2)"/>
+              <text x="20" y="0" text-anchor="middle" font-size="11" fill="#a78bfa">summarize</text>
+            </g>
+            <defs><marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L6 4 L0 8 z" fill="#a78bfa"/></marker></defs>
+            <g transform="translate(280,90)">
+              <rect width="160" height="42" rx="6" fill="#a78bfa33" stroke="#a78bfa88"/>
+              <text x="80" y="22" text-anchor="middle" font-size="12" fill="#ececf1" font-weight="600">Compact summary</text>
+              <text x="80" y="36" text-anchor="middle" font-size="11" fill="#b9b9c4">"so far we discussed X, Y..."</text>
+              <text x="80" y="72" text-anchor="middle" font-size="11" fill="#7c7c8a">+ recent turns kept verbatim</text>
+            </g>
+          </svg>
+          <p style="color:var(--fg-2);font-size:13px;margin:10px 0 0">
+            When the stack gets too full, the agent collapses old chunks into short summaries. You lose some detail, but the conversation can keep going indefinitely.
+          </p>
+        </div>
+      </div>
+
+      <div class="takeaway">
+        <div class="k">The takeaway</div>
+        <p>The model is a goldfish that re-reads its whole notebook every time you speak. Bigger notebook = slower, more expensive, and easier to lose your place. Good agents are careful about what they keep in the notebook.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================== HARNESS =================== -->
+  <section class="tabpanel" id="harness">
+    <div class="panel">
+      <h2>Harness</h2>
+      <p class="section-sub">A bare model only takes text in and puts text out. The <em>harness</em> is the scaffolding around the model — the part that holds the conversation, runs tools on the model's behalf, asks for permission, and decides what the model gets to see on every turn. It's the difference between a brain in a jar and something you can actually drive.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 260" width="980">
+          <defs>
+            <linearGradient id="harnessGrad" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#2dd4bf" stop-opacity="0.10"/>
+              <stop offset="1" stop-color="#2dd4bf" stop-opacity="0.02"/>
+            </linearGradient>
+            <marker id="h-arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0 0 L6 4 L0 8 z" fill="#7c7c8a"/>
+            </marker>
+            <marker id="h-arr-loop" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0 0 L6 4 L0 8 z" fill="#f472b6"/>
+            </marker>
+          </defs>
+
+          <!-- Harness container -->
+          <rect x="20" y="20" width="940" height="220" rx="20"
+                fill="url(#harnessGrad)" stroke="#2dd4bf" stroke-opacity="0.55" stroke-width="2"/>
+          <text x="40" y="48" font-size="11" letter-spacing="3" fill="#2dd4bf" font-weight="700">THE HARNESS — ONE TURN OF THE CONVERSATION LOOP</text>
+
+          <!-- User -->
+          <g transform="translate(40,90)">
+            <rect width="130" height="90" rx="12" fill="#34d39922" stroke="#34d39966"/>
+            <text x="65" y="22" text-anchor="middle" font-size="10" fill="#34d399" letter-spacing="2">USER</text>
+            <text x="65" y="50" text-anchor="middle" font-size="13" fill="#ececf1" font-weight="600">your message</text>
+            <text x="65" y="72" text-anchor="middle" font-size="10" fill="#b9b9c4">"do X"</text>
+          </g>
+
+          <!-- 1: Assemble prompt -->
+          <g transform="translate(190,90)">
+            <rect width="170" height="90" rx="12" fill="#60a5fa22" stroke="#60a5fa66"/>
+            <text x="85" y="22" text-anchor="middle" font-size="10" fill="#60a5fa" letter-spacing="2">1 · ASSEMBLE</text>
+            <text x="85" y="46" text-anchor="middle" font-size="12" fill="#ececf1" font-weight="600">build the prompt</text>
+            <text x="85" y="62" text-anchor="middle" font-size="10" fill="#b9b9c4">rules + memory +</text>
+            <text x="85" y="76" text-anchor="middle" font-size="10" fill="#b9b9c4">history + your msg</text>
+          </g>
+
+          <!-- 2: Model -->
+          <g transform="translate(380,90)">
+            <rect width="140" height="90" rx="12" fill="#a78bfa33" stroke="#a78bfa" stroke-width="1.5"/>
+            <text x="70" y="22" text-anchor="middle" font-size="10" fill="#a78bfa" letter-spacing="2">2 · MODEL</text>
+            <text x="70" y="50" text-anchor="middle" font-size="14" fill="#ececf1" font-weight="700">replies</text>
+            <text x="70" y="72" text-anchor="middle" font-size="10" fill="#b9b9c4">text + tool requests</text>
+          </g>
+
+          <!-- 3: Run tools -->
+          <g transform="translate(540,90)">
+            <rect width="190" height="90" rx="12" fill="#fbbf2422" stroke="#fbbf2466"/>
+            <text x="95" y="22" text-anchor="middle" font-size="10" fill="#fbbf24" letter-spacing="2">3 · RUN TOOLS</text>
+            <text x="95" y="46" text-anchor="middle" font-size="12" fill="#ececf1" font-weight="600">if model asked</text>
+            <text x="95" y="62" text-anchor="middle" font-size="10" fill="#b9b9c4">ask user · run command</text>
+            <text x="95" y="76" text-anchor="middle" font-size="10" fill="#b9b9c4">feed result back</text>
+          </g>
+
+          <!-- 4: Loop or finish -->
+          <g transform="translate(750,90)">
+            <rect width="190" height="90" rx="12" fill="#f472b622" stroke="#f472b666"/>
+            <text x="95" y="22" text-anchor="middle" font-size="10" fill="#f472b6" letter-spacing="2">4 · LOOP OR FINISH</text>
+            <text x="95" y="50" text-anchor="middle" font-size="13" fill="#ececf1" font-weight="600">model done?</text>
+            <text x="95" y="72" text-anchor="middle" font-size="10" fill="#b9b9c4">no → back to step 1</text>
+          </g>
+
+          <!-- Arrows between steps -->
+          <line x1="170" y1="135" x2="186" y2="135" stroke="#7c7c8a" marker-end="url(#h-arr)"/>
+          <line x1="360" y1="135" x2="376" y2="135" stroke="#7c7c8a" marker-end="url(#h-arr)"/>
+          <line x1="520" y1="135" x2="536" y2="135" stroke="#7c7c8a" marker-end="url(#h-arr)"/>
+          <line x1="730" y1="135" x2="746" y2="135" stroke="#7c7c8a" marker-end="url(#h-arr)"/>
+
+          <!-- Loop-back arrow -->
+          <path d="M845 180 Q 845 218 470 218 Q 105 218 105 180"
+                fill="none" stroke="#f472b6" stroke-opacity="0.60" stroke-dasharray="4 4"
+                marker-end="url(#h-arr-loop)"/>
+          <text x="475" y="214" text-anchor="middle" font-size="10" fill="#f472b6" letter-spacing="2">L O O P</text>
+        </svg>
+      </div>
+
+      <div class="grid three" style="margin-top:22px">
+        <div class="card">
+          <div class="label">It runs the loop</div>
+          <h3>The model speaks once per turn</h3>
+          <p>The model doesn't "stay running." Every turn, the harness packages a fresh prompt, sends it, reads the reply, and decides whether to loop again. Without a harness, there's no agent — just one isolated reply.</p>
+        </div>
+        <div class="card">
+          <div class="label">It runs the tools</div>
+          <h3>The model can't press buttons</h3>
+          <p>When the model says "please edit this file" or "please search the web," it's writing a request — the harness is what actually does it, after checking with you if needed. Tools live in the harness, not in the model.</p>
+        </div>
+        <div class="card">
+          <div class="label">It curates the view</div>
+          <h3>It decides what the model sees</h3>
+          <p>Every turn, the harness picks which memories to load, which files to include, how much history to keep, and where to spend the context budget. Different harnesses make different choices — that's most of why they <em>feel</em> different.</p>
+        </div>
+      </div>
+
+      <h3 style="margin: 32px 0 4px; font-size: 18px;">What "assemble" actually means</h3>
+      <p class="section-sub">Every turn, the harness pulls each of these pieces from its own source and stacks them into a single prompt before handing it to the model. This is the same context window we saw in the previous tab — now from the harness's side: it's the harness's job to build this on every turn.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 180" width="980">
+          <defs>
+            <linearGradient id="harnessCtxFill" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stop-color="#2dd4bf" stop-opacity="0.30"/>
+              <stop offset="1" stop-color="#a78bfa" stop-opacity="0.30"/>
+            </linearGradient>
+          </defs>
+
+          <text x="40" y="22" font-size="11" fill="#7c7c8a" letter-spacing="2">WHAT THE HARNESS HANDS TO THE MODEL EACH TURN</text>
+
+          <rect x="40" y="40" width="900" height="84" rx="12" fill="#15151c" stroke="rgba(255,255,255,0.14)"/>
+          <rect x="40" y="40" width="760" height="84" rx="12" fill="url(#harnessCtxFill)" stroke="none"/>
+
+          <g font-size="11" fill="#ececf1" text-anchor="middle">
+            <rect x="48" y="48" width="90" height="68" rx="8" fill="#a78bfa22" stroke="#a78bfa66"/>
+            <text x="93" y="76" font-weight="600">Instructions</text>
+            <text x="93" y="94" fill="#b9b9c4" font-size="9">house rules</text>
+
+            <rect x="142" y="48" width="100" height="68" rx="8" fill="#2dd4bf22" stroke="#2dd4bf66"/>
+            <text x="192" y="76" font-weight="600" font-size="12">Tools</text>
+            <text x="192" y="94" fill="#b9b9c4" font-size="9">what it can do</text>
+
+            <rect x="246" y="48" width="70" height="68" rx="8" fill="#fbbf2422" stroke="#fbbf2466"/>
+            <text x="281" y="76" font-weight="600">Skills</text>
+            <text x="281" y="94" fill="#b9b9c4" font-size="9">loaded</text>
+
+            <rect x="320" y="48" width="64" height="68" rx="8" fill="#34d39922" stroke="#34d39966"/>
+            <text x="352" y="76" font-weight="600">Memory</text>
+            <text x="352" y="94" fill="#b9b9c4" font-size="9">notes</text>
+
+            <rect x="388" y="48" width="170" height="68" rx="8" fill="#60a5fa22" stroke="#60a5fa66"/>
+            <text x="473" y="76" font-weight="600" font-size="12">Conversation</text>
+            <text x="473" y="94" fill="#b9b9c4" font-size="9">your back-and-forth</text>
+
+            <rect x="562" y="48" width="160" height="68" rx="8" fill="#f472b622" stroke="#f472b666"/>
+            <text x="642" y="76" font-weight="600" font-size="12">Documents</text>
+            <text x="642" y="94" fill="#b9b9c4" font-size="9">files, search hits</text>
+
+            <rect x="726" y="48" width="70" height="68" rx="8" fill="#fb718522" stroke="#fb718566"/>
+            <text x="761" y="76" font-weight="600">Question</text>
+            <text x="761" y="94" fill="#b9b9c4" font-size="9">your turn</text>
+
+            <rect x="800" y="48" width="132" height="68" rx="8" stroke-dasharray="4 4" fill="none" stroke="rgba(255,255,255,0.20)"/>
+            <text x="866" y="80" fill="#7c7c8a">empty</text>
+            <text x="866" y="98" fill="#7c7c8a" font-size="10">room left</text>
+          </g>
+
+          <text x="490" y="158" text-anchor="middle" font-size="11" fill="#7c7c8a">Each piece comes from a different source — and the harness decides what fits in the budget and what gets cut.</text>
+        </svg>
+      </div>
+
+      <h3 style="margin: 32px 0 4px; font-size: 18px;">Subagents — when the agent sends a helper</h3>
+      <p class="section-sub">Sometimes a job is too big or too messy to do in one head. A capable harness lets the main agent spawn a smaller helper — a <em>subagent</em> — to handle a piece of the work in its own private context, then return just a short summary. The mess stays downstairs.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 360" width="980">
+          <defs>
+            <linearGradient id="subFilled" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stop-color="#fb7185" stop-opacity="0.40"/>
+              <stop offset="0.5" stop-color="#fbbf24" stop-opacity="0.28"/>
+              <stop offset="1" stop-color="#fb7185" stop-opacity="0.40"/>
+            </linearGradient>
+            <marker id="arr-dispatch" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0 0 L6 4 L0 8 z" fill="#fb7185"/>
+            </marker>
+            <marker id="arr-summary" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0 0 L6 4 L0 8 z" fill="#34d399"/>
+            </marker>
+          </defs>
+
+          <!-- BEFORE: Main agent's clean context -->
+          <text x="40" y="22" font-size="11" letter-spacing="2" fill="#7c7c8a">MAIN AGENT · CONTEXT BEFORE</text>
+          <rect x="40" y="32" width="900" height="48" rx="8" fill="#15151c" stroke="rgba(255,255,255,0.12)"/>
+          <rect x="48" y="40" width="80" height="32" rx="5" fill="#a78bfa33" stroke="#a78bfa66"/>
+          <text x="88" y="60" font-size="11" fill="#ececf1" text-anchor="middle">Rules</text>
+          <rect x="136" y="40" width="200" height="32" rx="5" fill="#60a5fa33" stroke="#60a5fa66"/>
+          <text x="236" y="60" font-size="11" fill="#ececf1" text-anchor="middle">Your conversation</text>
+          <rect x="344" y="40" width="588" height="32" rx="5" fill="none" stroke="rgba(255,255,255,0.12)" stroke-dasharray="4 4"/>
+          <text x="638" y="60" font-size="10" fill="#7c7c8a" text-anchor="middle">room to think</text>
+
+          <!-- Dispatch arrow -->
+          <line x1="490" y1="92" x2="490" y2="130" stroke="#fb7185" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#arr-dispatch)"/>
+          <text x="504" y="116" font-size="11" fill="#fb7185">dispatches: "go search 200 files for X"</text>
+
+          <!-- MIDDLE: Subagent's own context window -->
+          <text x="40" y="148" font-size="11" letter-spacing="2" fill="#fb7185">SUBAGENT · ITS OWN CONTEXT WINDOW (TEMPORARY)</text>
+          <rect x="40" y="158" width="900" height="48" rx="8" fill="#fb71850c" stroke="#fb718588" stroke-width="1.5"/>
+          <rect x="48" y="166" width="100" height="32" rx="5" fill="#fb718533" stroke="#fb718566"/>
+          <text x="98" y="186" font-size="11" fill="#ececf1" text-anchor="middle">Task brief</text>
+          <rect x="156" y="166" width="650" height="32" rx="5" fill="url(#subFilled)" stroke="#fb718577"/>
+          <text x="481" y="186" font-size="11" fill="#ececf1" text-anchor="middle" font-weight="600">200 files · search results · intermediate reasoning · tool calls</text>
+          <rect x="814" y="166" width="118" height="32" rx="5" fill="#fb718522" stroke="#fb718566"/>
+          <text x="873" y="186" font-size="11" fill="#ececf1" text-anchor="middle">reasoning</text>
+          <text x="490" y="222" text-anchor="middle" font-size="10" fill="#fb7185">↑ all this noise lives only here — the main agent never sees it ↑</text>
+
+          <!-- Summary arrow -->
+          <line x1="490" y1="236" x2="490" y2="278" stroke="#34d399" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#arr-summary)"/>
+          <text x="504" y="262" font-size="11" fill="#34d399">summary back: "found X in foo.py:42"</text>
+
+          <!-- AFTER: Main agent's context with summary appended -->
+          <text x="40" y="294" font-size="11" letter-spacing="2" fill="#7c7c8a">MAIN AGENT · CONTEXT AFTER</text>
+          <rect x="40" y="304" width="900" height="48" rx="8" fill="#15151c" stroke="rgba(255,255,255,0.12)"/>
+          <rect x="48" y="312" width="80" height="32" rx="5" fill="#a78bfa33" stroke="#a78bfa66"/>
+          <text x="88" y="332" font-size="11" fill="#ececf1" text-anchor="middle">Rules</text>
+          <rect x="136" y="312" width="200" height="32" rx="5" fill="#60a5fa33" stroke="#60a5fa66"/>
+          <text x="236" y="332" font-size="11" fill="#ececf1" text-anchor="middle">Your conversation</text>
+          <rect x="344" y="312" width="200" height="32" rx="5" fill="#34d39933" stroke="#34d39966"/>
+          <text x="444" y="332" font-size="11" fill="#ececf1" text-anchor="middle">+ subagent summary</text>
+          <rect x="552" y="312" width="380" height="32" rx="5" fill="none" stroke="rgba(255,255,255,0.12)" stroke-dasharray="4 4"/>
+          <text x="742" y="332" font-size="10" fill="#7c7c8a" text-anchor="middle">still plenty of room</text>
+        </svg>
+      </div>
+
+      <div class="grid three" style="margin-top:22px">
+        <div class="card">
+          <span class="pill pink" style="margin-bottom:10px">Context hygiene</span>
+          <h3>The mess stays downstairs</h3>
+          <p>Whatever the subagent reads — 200 files, a wall of search results, a long log — lives only in <em>its</em> context window. The main agent gets back a clean summary and never has to wade through the raw material. When the subagent finishes, that context is thrown away.</p>
+        </div>
+        <div class="card">
+          <span class="pill blue" style="margin-bottom:10px">Parallel work</span>
+          <h3>Many heads at once</h3>
+          <p>Independent tasks can run as separate subagents at the same time. "Search these five places in parallel" finishes in roughly the time of one search, not five — the harness juggles them and collects the summaries.</p>
+        </div>
+        <div class="card">
+          <span class="pill amber" style="margin-bottom:10px">Specialization</span>
+          <h3>Different helpers, different jobs</h3>
+          <p>A subagent can have its own instructions and a narrower toolset — a <em>researcher</em>, a <em>code reviewer</em>, a <em>verifier</em>. The main agent picks the right specialist for each piece of work, like a manager handing tasks to people with sharper focus.</p>
+        </div>
+      </div>
+
+      <h3 style="margin: 32px 0 4px; font-size: 18px;">Real harnesses, side by side</h3>
+      <p class="section-sub">The same model behaves very differently depending on which harness is wrapped around it.</p>
+
+      <div class="grid two">
+        <div class="card">
+          <span class="pill amber" style="margin-bottom:10px">Claude Code</span>
+          <h3>Terminal-first, code-shaped</h3>
+          <p>Anthropic's CLI harness. Lives in your terminal, edits files, runs commands, asks permission for risky operations, manages git. Built for shipping code. <em>This explainer was built with it.</em></p>
+        </div>
+        <div class="card">
+          <span class="pill blue" style="margin-bottom:10px">Cursor · Windsurf · Continue</span>
+          <h3>Bolted into the editor</h3>
+          <p>Harnesses that live inside a code editor. Same model under the hood, but the harness sees your open files, your cursor, your project structure — and slots its suggestions directly into the editor.</p>
+        </div>
+        <div class="card">
+          <span class="pill green" style="margin-bottom:10px">ChatGPT · Claude.ai</span>
+          <h3>Chat-app harnesses</h3>
+          <p>The web and mobile apps. Tuned for conversation: rich formatting, images, file uploads, voice. Fewer raw "do things in the world" tools than developer harnesses — by design.</p>
+        </div>
+        <div class="card">
+          <span class="pill pink" style="margin-bottom:10px">OpenClaw · custom builds</span>
+          <h3>Roll your own</h3>
+          <p>Open-source harnesses you can self-host, or fully custom ones built on a vendor SDK. More control and privacy, but every feature — permissions, memory, hooks, tools — is yours to design and maintain.</p>
+        </div>
+      </div>
+
+      <div class="takeaway">
+        <div class="k">The takeaway</div>
+        <p>A model on its own is a brain in a jar — it can write but it can't <em>do</em>. The harness gives it hands, eyes, a steering wheel, and a sense of where it's been. The same model in two different harnesses is, practically speaking, two different products.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================== RAG =================== -->
+  <section class="tabpanel" id="rag">
+    <div class="panel">
+      <h2>RAG</h2>
+      <p class="section-sub"><strong>RAG</strong> stands for <em>Retrieval-Augmented Generation</em>. Before answering, the agent searches a pile of your private documents for the most relevant chunks, then hands those chunks to the model along with your question. It's how an agent stays grounded in information it wasn't trained on — without dumping a whole knowledge base into context every time.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 270" width="980">
+          <defs>
+            <marker id="rag-arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0 0 L6 4 L0 8 z" fill="#22d3ee"/>
+            </marker>
+          </defs>
+
+          <text x="40" y="22" font-size="12" fill="#7c7c8a" letter-spacing="2">HOW RAG WORKS — FOUR STAGES</text>
+
+          <!-- Stage 1: You ask -->
+          <g transform="translate(40,46)">
+            <rect width="190" height="180" rx="14" fill="#60a5fa1c" stroke="#60a5fa66"/>
+            <text x="14" y="26" font-size="10" fill="#60a5fa" letter-spacing="2">1 · YOU ASK</text>
+            <text x="14" y="72" font-size="13" fill="#ececf1">"What's our</text>
+            <text x="14" y="90" font-size="13" fill="#ececf1">refund policy?"</text>
+            <text x="14" y="140" font-size="10" fill="#7c7c8a">an everyday question</text>
+            <text x="14" y="154" font-size="10" fill="#7c7c8a">about your business</text>
+          </g>
+
+          <line x1="240" y1="136" x2="270" y2="136" stroke="#22d3ee" stroke-width="2" marker-end="url(#rag-arr)"/>
+
+          <!-- Stage 2: Search -->
+          <g transform="translate(280,46)">
+            <rect width="190" height="180" rx="14" fill="#22d3ee1c" stroke="#22d3ee66"/>
+            <text x="14" y="26" font-size="10" fill="#22d3ee" letter-spacing="2">2 · SEARCH</text>
+            <g transform="translate(56,46)" stroke="#22d3ee88" stroke-width="1.5">
+              <rect x="0" y="0" width="76" height="6" rx="2" fill="#22d3ee33"/>
+              <rect x="0" y="11" width="76" height="6" rx="2" fill="#22d3ee33"/>
+              <rect x="0" y="22" width="76" height="6" rx="2" fill="#22d3ee66"/>
+              <rect x="0" y="33" width="76" height="6" rx="2" fill="#22d3ee33"/>
+              <rect x="0" y="44" width="76" height="6" rx="2" fill="#22d3ee33"/>
+            </g>
+            <text x="95" y="78" font-size="11" fill="#ececf1">vector</text>
+            <text x="95" y="92" font-size="11" fill="#ececf1">database</text>
+            <text x="14" y="140" font-size="10" fill="#7c7c8a">find chunks closest</text>
+            <text x="14" y="154" font-size="10" fill="#7c7c8a">to your question</text>
+          </g>
+
+          <line x1="480" y1="136" x2="510" y2="136" stroke="#22d3ee" stroke-width="2" marker-end="url(#rag-arr)"/>
+
+          <!-- Stage 3: Top chunks -->
+          <g transform="translate(520,46)">
+            <rect width="190" height="180" rx="14" fill="#fbbf241c" stroke="#fbbf2466"/>
+            <text x="14" y="26" font-size="10" fill="#fbbf24" letter-spacing="2">3 · TOP CHUNKS</text>
+            <rect x="14" y="38" width="162" height="28" rx="5" fill="#fbbf2422" stroke="#fbbf2455"/>
+            <text x="22" y="56" font-size="10" fill="#ececf1">"Refunds within 30 days..."</text>
+            <rect x="14" y="72" width="162" height="28" rx="5" fill="#fbbf2422" stroke="#fbbf2455"/>
+            <text x="22" y="90" font-size="10" fill="#ececf1">"Contact refunds@co.com..."</text>
+            <rect x="14" y="106" width="162" height="28" rx="5" fill="#fbbf2422" stroke="#fbbf2455"/>
+            <text x="22" y="124" font-size="10" fill="#ececf1">"Return shipping covered..."</text>
+            <text x="14" y="158" font-size="10" fill="#7c7c8a">the most relevant snippets</text>
+          </g>
+
+          <line x1="720" y1="136" x2="750" y2="136" stroke="#22d3ee" stroke-width="2" marker-end="url(#rag-arr)"/>
+
+          <!-- Stage 4: Model answers -->
+          <g transform="translate(760,46)">
+            <rect width="180" height="180" rx="14" fill="#a78bfa1c" stroke="#a78bfa66"/>
+            <text x="14" y="26" font-size="10" fill="#a78bfa" letter-spacing="2">4 · MODEL ANSWERS</text>
+            <text x="14" y="60" font-size="11" fill="#ececf1">With the chunks +</text>
+            <text x="14" y="76" font-size="11" fill="#ececf1">your question in</text>
+            <text x="14" y="92" font-size="11" fill="#ececf1">context, the model</text>
+            <text x="14" y="108" font-size="11" fill="#ececf1">writes a grounded</text>
+            <text x="14" y="124" font-size="11" fill="#ececf1">answer.</text>
+            <text x="14" y="158" font-size="10" fill="#7c7c8a">not from memory —</text>
+            <text x="14" y="172" font-size="10" fill="#7c7c8a">from <tspan fill="#a78bfa">your</tspan> data</text>
+          </g>
+
+          <text x="490" y="252" text-anchor="middle" font-size="11" fill="#7c7c8a">The model still does the talking — it just gets the right reading material first.</text>
+        </svg>
+      </div>
+
+      <div class="grid three" style="margin-top:22px">
+        <div class="card">
+          <div class="label">The win</div>
+          <h3>Search by meaning, not keywords</h3>
+          <p>Vector search finds chunks that are <em>about</em> the same thing, not chunks that share words. "How do I get my money back?" matches "refund policy" even though no word is shared. Old-school keyword search would miss this entirely.</p>
+        </div>
+        <div class="card">
+          <div class="label">Why it scales</div>
+          <h3>Only what's needed</h3>
+          <p>You might have 10,000 documents. RAG sends maybe 5 short chunks per question. The model never sees the rest. The knowledge base can grow without growing the context budget — the opposite of "just paste it all in."</p>
+        </div>
+        <div class="card">
+          <div class="label">Why it's flexible</div>
+          <h3>Fresh, not frozen</h3>
+          <p>The vector database is yours — update it any time. New policy doc? Re-index it and the agent answers using the new version the next minute. The model itself never changes; what it <em>reads</em> changes. No retraining required.</p>
+        </div>
+      </div>
+
+      <h3 style="margin: 36px 0 4px; font-size: 18px;">What's a vector database?</h3>
+      <p class="section-sub">A vector database stores the "fingerprints" of your documents. Each chunk gets converted to a list of numbers (an <em>embedding</em>) that captures its meaning. Two chunks about the same topic have similar fingerprints — even if they share no words. The database is built to find nearest neighbors fast, across millions of fingerprints.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 280" width="980">
+          <defs>
+            <marker id="rag-arr-rose" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0 0 L6 4 L0 8 z" fill="#fb7185"/>
+            </marker>
+          </defs>
+
+          <text x="40" y="22" font-size="12" fill="#7c7c8a" letter-spacing="2">SEMANTIC SPACE — PHRASES THAT MEAN SIMILAR THINGS LAND CLOSE TOGETHER</text>
+
+          <!-- Subtle grid -->
+          <g stroke="rgba(255,255,255,0.04)">
+            <line x1="40" y1="80" x2="940" y2="80"/>
+            <line x1="40" y1="160" x2="940" y2="160"/>
+            <line x1="40" y1="220" x2="940" y2="220"/>
+            <line x1="220" y1="44" x2="220" y2="240"/>
+            <line x1="460" y1="44" x2="460" y2="240"/>
+            <line x1="700" y1="44" x2="700" y2="240"/>
+          </g>
+
+          <!-- Cluster 1: refunds (cyan) -->
+          <ellipse cx="180" cy="130" rx="100" ry="65" fill="#22d3ee10" stroke="#22d3ee44" stroke-dasharray="4 4"/>
+          <text x="180" y="80" text-anchor="middle" font-size="10" fill="#22d3ee" letter-spacing="2">REFUNDS</text>
+          <circle cx="150" cy="118" r="5" fill="#22d3ee"/>
+          <text x="150" y="108" text-anchor="middle" font-size="11" fill="#ececf1" font-weight="600">refund policy</text>
+          <circle cx="210" cy="110" r="4" fill="#22d3ee99"/>
+          <text x="218" y="100" font-size="10" fill="#b9b9c4">money back</text>
+          <circle cx="220" cy="148" r="4" fill="#22d3ee99"/>
+          <text x="228" y="152" font-size="10" fill="#b9b9c4">return</text>
+          <circle cx="138" cy="158" r="4" fill="#22d3ee99"/>
+          <text x="100" y="172" font-size="10" fill="#b9b9c4">cancellation</text>
+
+          <!-- Cluster 2: shipping (green) -->
+          <ellipse cx="530" cy="170" rx="100" ry="55" fill="#34d39910" stroke="#34d39944" stroke-dasharray="4 4"/>
+          <text x="530" y="120" text-anchor="middle" font-size="10" fill="#34d399" letter-spacing="2">SHIPPING</text>
+          <circle cx="510" cy="160" r="4" fill="#34d39999"/>
+          <text x="510" y="150" text-anchor="middle" font-size="10" fill="#b9b9c4">shipping address</text>
+          <circle cx="560" cy="180" r="4" fill="#34d39999"/>
+          <text x="588" y="184" font-size="10" fill="#b9b9c4">delivery</text>
+          <circle cx="500" cy="195" r="4" fill="#34d39999"/>
+          <text x="490" y="210" font-size="10" fill="#b9b9c4">tracking</text>
+
+          <!-- Cluster 3: product (amber) -->
+          <ellipse cx="830" cy="130" rx="90" ry="55" fill="#fbbf2410" stroke="#fbbf2444" stroke-dasharray="4 4"/>
+          <text x="830" y="80" text-anchor="middle" font-size="10" fill="#fbbf24" letter-spacing="2">PRODUCT</text>
+          <circle cx="810" cy="118" r="4" fill="#fbbf2499"/>
+          <text x="810" y="108" text-anchor="middle" font-size="10" fill="#b9b9c4">color options</text>
+          <circle cx="850" cy="140" r="4" fill="#fbbf2499"/>
+          <text x="858" y="148" font-size="10" fill="#b9b9c4">size guide</text>
+          <circle cx="820" cy="160" r="4" fill="#fbbf2499"/>
+          <text x="810" y="178" font-size="10" fill="#b9b9c4">material</text>
+
+          <!-- Query callout -->
+          <g>
+            <rect x="40" y="42" width="200" height="34" rx="8" fill="#fb718522" stroke="#fb718577"/>
+            <text x="52" y="58" font-size="9" fill="#fb7185" letter-spacing="2">YOUR QUESTION</text>
+            <text x="52" y="70" font-size="11" fill="#ececf1">"how do I get my money back?"</text>
+          </g>
+          <path d="M 110 80 Q 130 100, 150 113" stroke="#fb7185" fill="none" stroke-dasharray="3 3" marker-end="url(#rag-arr-rose)"/>
+          <text x="130" y="100" font-size="9" fill="#fb7185" transform="rotate(40 130 100)">lands here</text>
+
+          <text x="490" y="266" text-anchor="middle" font-size="11" fill="#7c7c8a">Vector search asks "what's near my question?" and returns the closest neighbors — regardless of whether they share any actual words.</text>
+        </svg>
+      </div>
+
+      <div class="grid three" style="margin-top:22px">
+        <div class="card">
+          <div class="label">Fingerprints</div>
+          <h3>Embeddings capture meaning</h3>
+          <p>Each chunk of text gets turned into a list of ~1,000 numbers. The numbers themselves are nonsense to humans, but they place the chunk in a "semantic space" where similar things sit close together. This is what makes meaning-search possible.</p>
+        </div>
+        <div class="card">
+          <div class="label">One job, very fast</div>
+          <h3>Built for similarity lookup</h3>
+          <p>A vector database stores millions of these fingerprints and finds nearest neighbors in milliseconds — even across a corpus too big to scan linearly. That's the one thing it's optimized for.</p>
+        </div>
+        <div class="card">
+          <div class="label">Many flavors</div>
+          <h3>Managed or DIY</h3>
+          <p>Pinecone, Weaviate, Qdrant, Chroma — managed services with their own clouds. Postgres + pgvector — DIY on infrastructure you already run. Choice usually comes down to managed convenience vs hosting it yourself for privacy or cost.</p>
+        </div>
+      </div>
+
+      <div class="takeaway">
+        <div class="k">The takeaway</div>
+        <p>RAG turns "the model doesn't know our stuff" into "the model can read up before answering." It's the standard pattern for grounding agents in private data, and it scales: the knowledge base can grow without growing the context window. The model never learns your data — it just gets handed the right pages right before it speaks.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================== MEMORY =================== -->
+  <section class="tabpanel" id="memory">
+    <div class="panel">
+      <h2>Memory</h2>
+      <p class="section-sub">If the model is a goldfish, memory is the notebook it consults before every conversation. <span class="mono">AGENTS.md</span> / <span class="mono">CLAUDE.md</span> are the house rules pinned to the wall.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 360" width="980">
+          <defs>
+            <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+              <path d="M0 0 L8 5 L0 10 z" fill="#34d399"/>
+            </marker>
+          </defs>
+
+          <!-- Two separate conversations -->
+          <g transform="translate(40,40)">
+            <rect width="260" height="160" rx="12" fill="#15151c" stroke="rgba(255,255,255,0.12)"/>
+            <text x="20" y="30" font-size="11" fill="#7c7c8a" letter-spacing="2">CONVERSATION · MONDAY</text>
+            <rect x="20" y="48" width="180" height="22" rx="6" fill="#60a5fa33"/>
+            <text x="30" y="64" font-size="12" fill="#ececf1">"I prefer concise replies."</text>
+            <rect x="60" y="78" width="180" height="22" rx="6" fill="#a78bfa33"/>
+            <text x="70" y="94" font-size="12" fill="#ececf1">"Got it."</text>
+            <rect x="20" y="108" width="220" height="22" rx="6" fill="#60a5fa33"/>
+            <text x="30" y="124" font-size="12" fill="#ececf1">"Help me debug a Python script."</text>
+            <text x="20" y="150" font-size="11" fill="#7c7c8a" font-style="italic">[conversation ends]</text>
+          </g>
+
+          <!-- Memory store in the middle -->
+          <g transform="translate(370,30)">
+            <rect width="240" height="180" rx="14" fill="#15151c" stroke="#34d39966" stroke-width="1.5"/>
+            <text x="120" y="28" text-anchor="middle" font-size="13" fill="#34d399" font-weight="700" letter-spacing="2">MEMORY</text>
+            <text x="120" y="46" text-anchor="middle" font-size="11" fill="#7c7c8a">persists across conversations</text>
+
+            <g transform="translate(16,60)">
+              <rect width="208" height="22" rx="5" fill="#34d39922" stroke="#34d39955"/>
+              <text x="10" y="15" font-size="11" fill="#ececf1">📝 user prefers concise replies</text>
+              <rect y="28" width="208" height="22" rx="5" fill="#34d39922" stroke="#34d39955"/>
+              <text x="10" y="43" font-size="11" fill="#ececf1">📝 works in Python frequently</text>
+              <rect y="56" width="208" height="22" rx="5" fill="#34d39922" stroke="#34d39955"/>
+              <text x="10" y="71" font-size="11" fill="#ececf1">📝 don't suggest the cloud</text>
+              <rect y="84" width="208" height="22" rx="5" fill="#34d39922" stroke="#34d39955"/>
+              <text x="10" y="99" font-size="11" fill="#ececf1">📝 tests must hit real DB</text>
+            </g>
+          </g>
+
+          <!-- Tuesday conversation -->
+          <g transform="translate(680,40)">
+            <rect width="260" height="160" rx="12" fill="#15151c" stroke="rgba(255,255,255,0.12)"/>
+            <text x="20" y="30" font-size="11" fill="#7c7c8a" letter-spacing="2">CONVERSATION · TUESDAY</text>
+            <rect x="20" y="48" width="220" height="22" rx="6" fill="#60a5fa33"/>
+            <text x="30" y="64" font-size="12" fill="#ececf1">"How should I deploy this?"</text>
+            <rect x="60" y="78" width="180" height="40" rx="6" fill="#a78bfa33"/>
+            <text x="70" y="94" font-size="12" fill="#ececf1">"On your homelab —</text>
+            <text x="70" y="110" font-size="12" fill="#ececf1">avoiding cloud per usual."</text>
+            <text x="20" y="148" font-size="11" fill="#34d399" font-style="italic">↑ remembers you</text>
+          </g>
+
+          <!-- Arrows -->
+          <path d="M300 120 L370 120" stroke="#34d399" stroke-width="2" marker-end="url(#arr)"/>
+          <text x="335" y="110" text-anchor="middle" font-size="10" fill="#34d399">save</text>
+          <path d="M610 120 L680 120" stroke="#34d399" stroke-width="2" marker-end="url(#arr)"/>
+          <text x="645" y="110" text-anchor="middle" font-size="10" fill="#34d399">recall</text>
+
+          <!-- House rules box -->
+          <g transform="translate(40,230)">
+            <rect width="900" height="110" rx="14" fill="#15151c" stroke="#fbbf2466" stroke-width="1.5"/>
+            <text x="20" y="30" font-size="13" fill="#fbbf24" font-weight="700" letter-spacing="2">📌 AGENTS.md  /  CLAUDE.md — HOUSE RULES (PINNED EVERY CONVERSATION)</text>
+
+            <g transform="translate(20,46)" font-size="12" fill="#ececf1">
+              <rect width="280" height="50" rx="8" fill="#fbbf2412" stroke="#fbbf2433"/>
+              <text x="14" y="20">Never deploy to production on Friday.</text>
+              <text x="14" y="38" fill="#7c7c8a">— house rule, applies always</text>
+
+              <g transform="translate(296,0)">
+                <rect width="280" height="50" rx="8" fill="#fbbf2412" stroke="#fbbf2433"/>
+                <text x="14" y="20">Postgres is at db.lan:5432.</text>
+                <text x="14" y="38" fill="#7c7c8a">— project fact, lives in the repo</text>
+              </g>
+
+              <g transform="translate(592,0)">
+                <rect width="268" height="50" rx="8" fill="#fbbf2412" stroke="#fbbf2433"/>
+                <text x="14" y="20">Tests must use real DB, not mocks.</text>
+                <text x="14" y="38" fill="#7c7c8a">— hard-won lesson from past incident</text>
+              </g>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <div class="grid two" style="margin-top:22px">
+        <div class="card">
+          <span class="pill green" style="margin-bottom:10px">Memory (per user)</span>
+          <h3>Travels with you</h3>
+          <p>Notes the agent writes about <em>you</em>: preferences, who you are, things you've asked it to remember. Persists across every conversation. Lives in your account, not the project.</p>
+          <p style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);color:var(--fg-2);font-size:13px"><strong style="color:var(--rose)">Where it goes wrong:</strong> retrieval is fuzzy — the agent picks the note that <em>sounds closest</em> to your question, not necessarily the right one. Stale notes don't expire on their own. And every loaded note eats context budget — past a few dozen, the truly useful ones get harder to spot.</p>
+        </div>
+        <div class="card">
+          <span class="pill amber" style="margin-bottom:10px">AGENTS.md (per project)</span>
+          <h3>Travels with the codebase</h3>
+          <p>A markdown file checked into the repo. Anyone who works on that project — human or agent — gets the same house rules: how to deploy, what's forbidden, where things live.</p>
+          <p style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);color:var(--fg-2);font-size:13px"><strong style="color:var(--rose)">Where it goes wrong:</strong> rules accumulate without pruning, leading to contradictions ("always X" written one month, "never X" written the next). And every rule rides along on every turn — a wall of rules leaves less room to think, even on tasks they don't apply to.</p>
+        </div>
+      </div>
+
+      <div class="takeaway">
+        <div class="k">The takeaway</div>
+        <p>Memory is what makes an agent feel like it knows you — but every memory is a bet that the fact will stay true and that the agent will retrieve it correctly. Curate sparingly: a small, fresh set beats a sprawling, stale one. Prune like a garden, not a hoarder's attic.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================== SKILLS =================== -->
+  <section class="tabpanel" id="skills">
+    <div class="panel">
+      <h2>Skills</h2>
+      <p class="section-sub">A skill is a recipe card the agent pulls off the shelf when it sees a job that matches. Skills let an agent do specialized work without bloating every conversation with instructions it doesn't need.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 360" width="980">
+          <defs>
+            <marker id="arr3" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+              <path d="M0 0 L8 5 L0 10 z" fill="#fbbf24"/>
+            </marker>
+          </defs>
+
+          <!-- Shelf of skills -->
+          <text x="40" y="30" font-size="13" fill="#7c7c8a" letter-spacing="2">A SHELF OF SKILLS — ONLY PULLED WHEN NEEDED</text>
+
+          <g transform="translate(40,50)">
+            <!-- skill cards -->
+            <g>
+              <rect width="160" height="100" rx="10" fill="#fbbf2418" stroke="#fbbf2455"/>
+              <text x="14" y="24" font-size="12" fill="#fbbf24" font-weight="600">📐 frontend-design</text>
+              <text x="14" y="46" font-size="11" fill="#b9b9c4">Triggers when: user asks</text>
+              <text x="14" y="60" font-size="11" fill="#b9b9c4">to build a UI</text>
+              <text x="14" y="84" font-size="10" fill="#7c7c8a">SKILL.md + assets</text>
+            </g>
+            <g transform="translate(180,0)">
+              <rect width="160" height="100" rx="10" fill="#fbbf2418" stroke="#fbbf2455"/>
+              <text x="14" y="24" font-size="12" fill="#fbbf24" font-weight="600">🔍 code-review</text>
+              <text x="14" y="46" font-size="11" fill="#b9b9c4">Triggers when: review</text>
+              <text x="14" y="60" font-size="11" fill="#b9b9c4">a pull request</text>
+              <text x="14" y="84" font-size="10" fill="#7c7c8a">SKILL.md + checklist</text>
+            </g>
+            <g transform="translate(360,0)">
+              <rect width="160" height="100" rx="10" fill="#fbbf2418" stroke="#fbbf2455"/>
+              <text x="14" y="24" font-size="12" fill="#fbbf24" font-weight="600">📝 verify</text>
+              <text x="14" y="46" font-size="11" fill="#b9b9c4">Triggers when: confirm</text>
+              <text x="14" y="60" font-size="11" fill="#b9b9c4">a change works</text>
+              <text x="14" y="84" font-size="10" fill="#7c7c8a">SKILL.md + test plan</text>
+            </g>
+            <g transform="translate(540,0)">
+              <rect width="160" height="100" rx="10" fill="#fbbf2418" stroke="#fbbf2455"/>
+              <text x="14" y="24" font-size="12" fill="#fbbf24" font-weight="600">🛡️ security-review</text>
+              <text x="14" y="46" font-size="11" fill="#b9b9c4">Triggers when: scan</text>
+              <text x="14" y="60" font-size="11" fill="#b9b9c4">for vulnerabilities</text>
+              <text x="14" y="84" font-size="10" fill="#7c7c8a">SKILL.md + rulebook</text>
+            </g>
+            <g transform="translate(720,0)">
+              <rect width="160" height="100" rx="10" fill="#fbbf2418" stroke="#fbbf2455" stroke-dasharray="5 4"/>
+              <text x="14" y="24" font-size="12" fill="#fbbf24" font-weight="600">＋ your skill</text>
+              <text x="14" y="46" font-size="11" fill="#b9b9c4">Whatever you need to</text>
+              <text x="14" y="60" font-size="11" fill="#b9b9c4">do repeatedly &amp; well</text>
+              <text x="14" y="84" font-size="10" fill="#7c7c8a">just write it down</text>
+            </g>
+          </g>
+
+          <!-- The match flow -->
+          <g transform="translate(40,200)">
+            <rect width="220" height="60" rx="10" fill="#60a5fa22" stroke="#60a5fa66"/>
+            <text x="110" y="30" text-anchor="middle" font-size="13" fill="#ececf1" font-weight="600">"review my PR for security"</text>
+            <text x="110" y="48" text-anchor="middle" font-size="11" fill="#b9b9c4">user's message</text>
+          </g>
+
+          <path d="M260 230 L340 230" stroke="#fbbf24" stroke-width="2" marker-end="url(#arr3)"/>
+          <text x="300" y="222" text-anchor="middle" font-size="11" fill="#fbbf24">match</text>
+
+          <g transform="translate(340,200)">
+            <rect width="260" height="60" rx="10" fill="#fbbf2422" stroke="#fbbf2466"/>
+            <text x="130" y="30" text-anchor="middle" font-size="13" fill="#ececf1" font-weight="600">🛡️ security-review activated</text>
+            <text x="130" y="48" text-anchor="middle" font-size="11" fill="#b9b9c4">SKILL.md instructions loaded</text>
+          </g>
+
+          <path d="M600 230 L680 230" stroke="#fbbf24" stroke-width="2" marker-end="url(#arr3)"/>
+          <text x="640" y="222" text-anchor="middle" font-size="11" fill="#fbbf24">execute</text>
+
+          <g transform="translate(680,200)">
+            <rect width="260" height="60" rx="10" fill="#34d39922" stroke="#34d39966"/>
+            <text x="130" y="30" text-anchor="middle" font-size="13" fill="#ececf1" font-weight="600">Agent runs the recipe</text>
+            <text x="130" y="48" text-anchor="middle" font-size="11" fill="#b9b9c4">structured, repeatable output</text>
+          </g>
+
+          <!-- skill anatomy -->
+          <g transform="translate(40,290)">
+            <text x="0" y="0" font-size="11" fill="#7c7c8a" letter-spacing="2">SKILL.md ANATOMY</text>
+            <g transform="translate(0,10)" class="mono" font-size="11" fill="#b9b9c4">
+              <rect width="880" height="50" rx="6" fill="#1c1c25" stroke="rgba(255,255,255,0.10)"/>
+              <text x="14" y="20" fill="#a78bfa">name:</text><text x="60" y="20" fill="#ececf1">security-review</text>
+              <text x="240" y="20" fill="#a78bfa">when-to-use:</text><text x="340" y="20" fill="#ececf1">user asks to review a PR, audit code, or check for vulnerabilities</text>
+              <text x="14" y="40" fill="#ececf1">[steps + checklist + examples written in plain markdown]</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <div class="grid three" style="margin-top:22px">
+        <div class="card">
+          <div class="label">On-demand</div>
+          <h3>Loaded just-in-time</h3>
+          <p>Skills sit on a shelf until they match. Hundreds of skills can exist without slowing the agent down — only the relevant one comes off the shelf.</p>
+          <p style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);color:var(--fg-2);font-size:13px"><strong style="color:var(--rose)">Where it goes wrong:</strong> the matching is keyword-based. A "when to use" that's too vague ("use when working on code") fires for everything; too narrow ("pytest -k on Tuesday") fires for nothing. From your side, both look identical — the skill behaves inconsistently.</p>
+        </div>
+        <div class="card">
+          <div class="label">Markdown, not code</div>
+          <h3>Anyone can write one</h3>
+          <p>A skill is a plain markdown file with a name, a "when to use" description, and steps. No programming required.</p>
+          <p style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);color:var(--fg-2);font-size:13px"><strong style="color:var(--rose)">Where it goes wrong:</strong> there's no compiler to catch a sloppy "when to use," and no warning if two skills overlap on the same trigger. The agent silently picks one — usually the first — and the others go unused. You only notice when output gets weird.</p>
+        </div>
+        <div class="card">
+          <div class="label">Shareable</div>
+          <h3>Bottle your expertise</h3>
+          <p>Have a procedure that always works? Write it as a skill once, and every agent on the team uses it the same way every time.</p>
+          <p style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);color:var(--fg-2);font-size:13px"><strong style="color:var(--rose)">Where it goes wrong:</strong> skills age out. A recipe written for last year's tooling still triggers, but the steps inside no longer reflect how the system actually works. The agent confidently runs an obsolete recipe. Prune like any other code.</p>
+        </div>
+      </div>
+
+      <div class="takeaway">
+        <div class="k">The takeaway</div>
+        <p>Skills turn one-off prompts into reusable procedures, but the win comes from a small library of sharp, well-described skills — not a sprawling shelf of half-overlapping ones. The agent can only run a skill if it knows when to reach for it; if it can't tell two apart, you get inconsistency.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================== PLUGINS =================== -->
+  <section class="tabpanel" id="plugins">
+    <div class="panel">
+      <h2>Plugins</h2>
+      <p class="section-sub">A plugin is a sealed box that ships <em>tools</em>, <em>hooks</em>, and <em>skills</em> together. Install the box, get all three. Uninstall, and they're gone cleanly.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 360" width="980">
+          <defs>
+            <linearGradient id="plug" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#f472b6" stop-opacity="0.25"/>
+              <stop offset="1" stop-color="#f472b6" stop-opacity="0.05"/>
+            </linearGradient>
+          </defs>
+
+          <!-- The plugin box -->
+          <g transform="translate(40,30)">
+            <rect width="380" height="300" rx="16" fill="url(#plug)" stroke="#f472b6" stroke-opacity="0.55" stroke-width="1.5"/>
+            <text x="20" y="32" font-size="13" fill="#f472b6" font-weight="700" letter-spacing="2">📦 PLUGIN: github-toolkit</text>
+
+            <!-- tools -->
+            <g transform="translate(20,52)">
+              <text x="0" y="0" font-size="11" fill="#7c7c8a" letter-spacing="2">🔧 TOOLS — things the agent can DO</text>
+              <rect y="10" width="340" height="26" rx="6" fill="#60a5fa22" stroke="#60a5fa55"/>
+              <text x="12" y="28" font-size="12" fill="#ececf1">create_pull_request(title, body, branch)</text>
+              <rect y="42" width="340" height="26" rx="6" fill="#60a5fa22" stroke="#60a5fa55"/>
+              <text x="12" y="60" font-size="12" fill="#ececf1">list_issues(repo, state)</text>
+              <rect y="74" width="340" height="26" rx="6" fill="#60a5fa22" stroke="#60a5fa55"/>
+              <text x="12" y="92" font-size="12" fill="#ececf1">merge_pr(pr_number)</text>
+            </g>
+
+            <!-- hooks -->
+            <g transform="translate(20,166)">
+              <text x="0" y="0" font-size="11" fill="#7c7c8a" letter-spacing="2">🪝 HOOKS — fire automatically around events</text>
+              <rect y="10" width="340" height="26" rx="6" fill="#a78bfa22" stroke="#a78bfa55"/>
+              <text x="12" y="28" font-size="12" fill="#ececf1">before merge_pr: require approval</text>
+              <rect y="42" width="340" height="26" rx="6" fill="#a78bfa22" stroke="#a78bfa55"/>
+              <text x="12" y="60" font-size="12" fill="#ececf1">after create_pr: post Slack notice</text>
+            </g>
+
+            <!-- skills -->
+            <g transform="translate(20,250)">
+              <text x="0" y="0" font-size="11" fill="#7c7c8a" letter-spacing="2">📐 SKILLS — recipes that use the tools</text>
+              <rect y="10" width="340" height="26" rx="6" fill="#fbbf2422" stroke="#fbbf2455"/>
+              <text x="12" y="28" font-size="12" fill="#ececf1">/review-pr · /open-issue-from-bug</text>
+            </g>
+          </g>
+
+          <!-- Arrow + Agent -->
+          <g transform="translate(440,150)">
+            <path d="M0 30 L70 30" stroke="#f472b6" stroke-width="2.5" marker-end="url(#arrp)"/>
+            <defs><marker id="arrp" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L8 5 L0 10 z" fill="#f472b6"/></marker></defs>
+            <text x="35" y="22" text-anchor="middle" font-size="11" fill="#f472b6">install</text>
+          </g>
+
+          <g transform="translate(520,30)">
+            <rect width="420" height="300" rx="16" fill="#15151c" stroke="rgba(255,255,255,0.14)"/>
+            <text x="20" y="32" font-size="13" fill="#7c7c8a" letter-spacing="2">YOUR AGENT — NOW WITH NEW POWERS</text>
+            <circle cx="100" cy="120" r="44" fill="#a78bfa22" stroke="#a78bfa66" stroke-width="1.5"/>
+            <text x="100" y="126" text-anchor="middle" font-size="22" fill="#a78bfa" font-weight="700">AI</text>
+
+            <g transform="translate(170,80)" font-size="12" fill="#ececf1">
+              <rect width="220" height="22" rx="5" fill="#60a5fa22" stroke="#60a5fa66"/>
+              <text x="10" y="15">+ 3 GitHub tools available</text>
+              <rect y="30" width="220" height="22" rx="5" fill="#a78bfa22" stroke="#a78bfa66"/>
+              <text x="10" y="45">+ 2 hooks active</text>
+              <rect y="60" width="220" height="22" rx="5" fill="#fbbf2422" stroke="#fbbf2466"/>
+              <text x="10" y="75">+ 2 skills on the shelf</text>
+            </g>
+
+            <text x="20" y="220" font-size="12" fill="#7c7c8a">Now the agent can:</text>
+            <text x="20" y="244" font-size="13" fill="#b9b9c4">— open PRs without you copying URLs</text>
+            <text x="20" y="266" font-size="13" fill="#b9b9c4">— refuse risky merges via the hook</text>
+            <text x="20" y="288" font-size="13" fill="#b9b9c4">— follow your team's PR-review recipe</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="grid three" style="margin-top:22px">
+        <div class="card">
+          <div class="label">🔧 Tools</div>
+          <h3>New verbs</h3>
+          <p>Things the agent can <em>do</em> — call APIs, edit files, query a database. Each tool is a function the agent picks up like a new appendage.</p>
+        </div>
+        <div class="card">
+          <div class="label">🪝 Hooks</div>
+          <h3>Tripwires</h3>
+          <p>Code that fires before or after specific events. "Before any merge, ping the channel." "After every file edit, run the linter." Automatic, not asked for.</p>
+        </div>
+        <div class="card">
+          <div class="label">📐 Skills</div>
+          <h3>Playbooks</h3>
+          <p>The procedures that combine the tools and the hooks into something useful end-to-end. Plugins ship skills so installing the plugin gives you the workflow, not just raw pieces.</p>
+        </div>
+      </div>
+
+      <div class="takeaway">
+        <div class="k">The takeaway</div>
+        <p>Plugins are how an agent grows. A vanilla agent talks. With plugins, it can file tickets, deploy code, draft emails, query your data warehouse, post to Slack — and it picks up house rules and safety checks along with the new abilities.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================== MCP =================== -->
+  <section class="tabpanel" id="mcp">
+    <div class="panel">
+      <h2>MCP Servers</h2>
+      <p class="section-sub"><strong>MCP</strong> stands for <em>Model Context Protocol</em> — an open standard that lets any agent talk to any service through a single shared plug. Think USB for AI tools. Before USB, every peripheral had its own custom cable; after USB, one socket served everything. MCP is the same bet for AI.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 340" width="980">
+          <defs>
+            <linearGradient id="mcp-bus-grad" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stop-color="#fb7185" stop-opacity="0.30"/>
+              <stop offset="1" stop-color="#fb7185" stop-opacity="0.10"/>
+            </linearGradient>
+          </defs>
+
+          <text x="490" y="24" text-anchor="middle" font-size="12" fill="#7c7c8a" letter-spacing="2">ONE PROTOCOL, MANY SERVICES</text>
+
+          <!-- Agent box -->
+          <g transform="translate(380,40)">
+            <rect width="220" height="76" rx="14" fill="#2dd4bf22" stroke="#2dd4bf" stroke-opacity="0.55" stroke-width="1.5"/>
+            <text x="110" y="28" text-anchor="middle" font-size="11" fill="#2dd4bf" letter-spacing="2">AGENT</text>
+            <text x="110" y="52" text-anchor="middle" font-size="14" fill="#ececf1" font-weight="700">any harness</text>
+            <text x="110" y="68" text-anchor="middle" font-size="10" fill="#b9b9c4">with an MCP client</text>
+          </g>
+
+          <line x1="490" y1="116" x2="490" y2="148" stroke="#fb7185" stroke-opacity="0.6" stroke-width="2" stroke-dasharray="3 3"/>
+
+          <!-- MCP bus -->
+          <rect x="40" y="148" width="900" height="40" rx="10" fill="url(#mcp-bus-grad)" stroke="#fb7185" stroke-opacity="0.55" stroke-width="1.5"/>
+          <text x="490" y="173" text-anchor="middle" font-size="13" fill="#ececf1" font-weight="700">MCP — open, standard protocol</text>
+
+          <!-- Drops to servers -->
+          <g stroke="#fb7185" stroke-opacity="0.55" stroke-width="2" stroke-dasharray="3 3">
+            <line x1="110" y1="188" x2="110" y2="220"/>
+            <line x1="264" y1="188" x2="264" y2="220"/>
+            <line x1="418" y1="188" x2="418" y2="220"/>
+            <line x1="572" y1="188" x2="572" y2="220"/>
+            <line x1="726" y1="188" x2="726" y2="220"/>
+            <line x1="880" y1="188" x2="880" y2="220"/>
+          </g>
+
+          <!-- Server cards -->
+          <g font-size="13" fill="#ececf1" text-anchor="middle">
+            <g transform="translate(40,220)">
+              <rect width="140" height="100" rx="10" fill="#60a5fa1c" stroke="#60a5fa66"/>
+              <text x="70" y="28" font-weight="700">GitHub</text>
+              <text x="70" y="46" font-size="10" fill="#b9b9c4">MCP server</text>
+              <text x="70" y="76" font-size="10" fill="#7c7c8a">issues · PRs</text>
+              <text x="70" y="90" font-size="10" fill="#7c7c8a">code search</text>
+            </g>
+            <g transform="translate(194,220)">
+              <rect width="140" height="100" rx="10" fill="#a78bfa1c" stroke="#a78bfa66"/>
+              <text x="70" y="28" font-weight="700">Postgres</text>
+              <text x="70" y="46" font-size="10" fill="#b9b9c4">MCP server</text>
+              <text x="70" y="76" font-size="10" fill="#7c7c8a">run queries</text>
+              <text x="70" y="90" font-size="10" fill="#7c7c8a">list schemas</text>
+            </g>
+            <g transform="translate(348,220)">
+              <rect width="140" height="100" rx="10" fill="#34d3991c" stroke="#34d39966"/>
+              <text x="70" y="28" font-weight="700">Filesystem</text>
+              <text x="70" y="46" font-size="10" fill="#b9b9c4">MCP server</text>
+              <text x="70" y="76" font-size="10" fill="#7c7c8a">read · write</text>
+              <text x="70" y="90" font-size="10" fill="#7c7c8a">grep files</text>
+            </g>
+            <g transform="translate(502,220)">
+              <rect width="140" height="100" rx="10" fill="#fbbf241c" stroke="#fbbf2466"/>
+              <text x="70" y="28" font-weight="700">Browser</text>
+              <text x="70" y="46" font-size="10" fill="#b9b9c4">MCP server</text>
+              <text x="70" y="76" font-size="10" fill="#7c7c8a">click · scrape</text>
+              <text x="70" y="90" font-size="10" fill="#7c7c8a">screenshot</text>
+            </g>
+            <g transform="translate(656,220)">
+              <rect width="140" height="100" rx="10" fill="#f472b61c" stroke="#f472b666"/>
+              <text x="70" y="28" font-weight="700">Slack</text>
+              <text x="70" y="46" font-size="10" fill="#b9b9c4">MCP server</text>
+              <text x="70" y="76" font-size="10" fill="#7c7c8a">send messages</text>
+              <text x="70" y="90" font-size="10" fill="#7c7c8a">read channels</text>
+            </g>
+            <g transform="translate(810,220)">
+              <rect width="140" height="100" rx="10" fill="#fb71851c" stroke="#fb718566" stroke-dasharray="5 4"/>
+              <text x="70" y="28" font-weight="700">＋ your own</text>
+              <text x="70" y="46" font-size="10" fill="#b9b9c4">MCP server</text>
+              <text x="70" y="76" font-size="10" fill="#7c7c8a">any internal</text>
+              <text x="70" y="90" font-size="10" fill="#7c7c8a">system</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <div class="grid three" style="margin-top:22px">
+        <div class="card">
+          <div class="label">Standard plug</div>
+          <h3>One protocol, any harness</h3>
+          <p>Write the connector once, every MCP-aware agent uses it. A GitHub server works in Claude Code, in Cursor, in your own Python script — same interface, no rewrites per harness.</p>
+        </div>
+        <div class="card">
+          <div class="label">Three primitives</div>
+          <h3>Tools, resources, and prompts</h3>
+          <p>An MCP server can expose three things: <em>tools</em> (actions to take), <em>resources</em> (data the agent can read), and <em>prompts</em> (ready-made templates a user can pick). Most servers focus on tools, but the protocol covers more.</p>
+        </div>
+        <div class="card">
+          <div class="label">Runs where you want it</div>
+          <h3>Self-hostable by default</h3>
+          <p>MCP servers are separate processes you start yourself. For sensitive systems — your database, your inbox, your internal wiki — the server can live entirely inside your network. Nothing leaves until you decide it should.</p>
+        </div>
+      </div>
+
+      <h3 style="margin: 32px 0 4px; font-size: 18px;">Plugins vs MCP servers — close cousins, not the same</h3>
+      <p class="section-sub">Both extend what an agent can do. They package it differently.</p>
+
+      <div class="grid two">
+        <div class="card" style="border-color: rgba(244,114,182,0.40)">
+          <span class="pill pink" style="margin-bottom:10px">Plugins</span>
+          <h3>Bundles, harness-specific</h3>
+          <p>Tools + hooks + skills packaged together for one specific harness. Runs <em>inside</em> the harness process. Rich: can intercept events, ship workflows, register skills. Not portable — a Claude Code plugin won't run in Cursor or Continue without a rewrite.</p>
+        </div>
+        <div class="card" style="border-color: rgba(251,113,133,0.40)">
+          <span class="pill rose" style="margin-bottom:10px">MCP servers</span>
+          <h3>Connectors, harness-agnostic</h3>
+          <p>Tools (plus resources and prompts) exposed over a standard wire protocol. Runs as a <em>separate process</em>, talked to by the harness over stdio or HTTP. Narrower scope, but fully portable: the same server plugs into any MCP-aware harness.</p>
+        </div>
+      </div>
+
+      <div class="takeaway">
+        <div class="k">The takeaway</div>
+        <p>MCP is to AI tools what USB became to peripherals: a boring, universal plug. Once a service has an MCP server, every MCP-aware agent — no matter who built it — can talk to it. The boring part is exactly why it works.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================== DATA =================== -->
+  <section class="tabpanel" id="data">
+    <div class="panel">
+      <h2>Data</h2>
+      <p class="section-sub">Where does your prompt go after you send it? What gets logged? Will your conversation train the next model version? The answers depend on the provider, the plan, and the harness — and "depends" is often the most honest answer.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 980 280" width="980">
+          <defs>
+            <marker id="data-arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0 0 L6 4 L0 8 z" fill="#818cf8"/>
+            </marker>
+          </defs>
+
+          <text x="40" y="22" font-size="12" fill="#7c7c8a" letter-spacing="2">ONE PROMPT'S JOURNEY</text>
+
+          <!-- 4 boxes -->
+          <g transform="translate(30,46)">
+            <rect width="200" height="120" rx="14" fill="#34d39922" stroke="#34d39966"/>
+            <text x="100" y="28" text-anchor="middle" font-size="10" fill="#34d399" letter-spacing="2">1 · YOU</text>
+            <text x="100" y="58" text-anchor="middle" font-size="13" fill="#ececf1" font-weight="600">Your device</text>
+            <text x="100" y="82" text-anchor="middle" font-size="10" fill="#b9b9c4">browser, terminal,</text>
+            <text x="100" y="96" text-anchor="middle" font-size="10" fill="#b9b9c4">phone</text>
+            <text x="100" y="112" text-anchor="middle" font-size="9" fill="#34d399">private to you</text>
+          </g>
+
+          <line x1="240" y1="106" x2="270" y2="106" stroke="#818cf8" stroke-width="2" marker-end="url(#data-arr)"/>
+
+          <g transform="translate(270,46)">
+            <rect width="200" height="120" rx="14" fill="#2dd4bf22" stroke="#2dd4bf66"/>
+            <text x="100" y="28" text-anchor="middle" font-size="10" fill="#2dd4bf" letter-spacing="2">2 · HARNESS</text>
+            <text x="100" y="58" text-anchor="middle" font-size="13" fill="#ececf1" font-weight="600">Your tool / app</text>
+            <text x="100" y="82" text-anchor="middle" font-size="10" fill="#b9b9c4">Claude Code, Cursor,</text>
+            <text x="100" y="96" text-anchor="middle" font-size="10" fill="#b9b9c4">ChatGPT app, etc.</text>
+            <text x="100" y="112" text-anchor="middle" font-size="9" fill="#fbbf24">may log · may relay</text>
+          </g>
+
+          <line x1="480" y1="106" x2="510" y2="106" stroke="#818cf8" stroke-width="2" marker-end="url(#data-arr)"/>
+
+          <g transform="translate(510,46)">
+            <rect width="200" height="120" rx="14" fill="#818cf822" stroke="#818cf866"/>
+            <text x="100" y="28" text-anchor="middle" font-size="10" fill="#818cf8" letter-spacing="2">3 · PROVIDER</text>
+            <text x="100" y="58" text-anchor="middle" font-size="13" fill="#ececf1" font-weight="600">Their servers</text>
+            <text x="100" y="82" text-anchor="middle" font-size="10" fill="#b9b9c4">Anthropic, OpenAI,</text>
+            <text x="100" y="96" text-anchor="middle" font-size="10" fill="#b9b9c4">Google, Meta, etc.</text>
+            <text x="100" y="112" text-anchor="middle" font-size="9" fill="#fb7185">logs · safety review · maybe training</text>
+          </g>
+
+          <line x1="720" y1="106" x2="750" y2="106" stroke="#818cf8" stroke-width="2" marker-end="url(#data-arr)"/>
+
+          <g transform="translate(750,46)">
+            <rect width="200" height="120" rx="14" fill="#a78bfa22" stroke="#a78bfa66"/>
+            <text x="100" y="28" text-anchor="middle" font-size="10" fill="#a78bfa" letter-spacing="2">4 · MODEL</text>
+            <text x="100" y="58" text-anchor="middle" font-size="13" fill="#ececf1" font-weight="600">The brain itself</text>
+            <text x="100" y="82" text-anchor="middle" font-size="10" fill="#b9b9c4">processes your</text>
+            <text x="100" y="96" text-anchor="middle" font-size="10" fill="#b9b9c4">prompt &amp; replies</text>
+            <text x="100" y="112" text-anchor="middle" font-size="9" fill="#34d399">no memory after</text>
+          </g>
+
+          <!-- Reverse arrow showing response back -->
+          <path d="M 130 200 Q 490 230, 850 200" fill="none" stroke="#7c7c8a" stroke-dasharray="3 4" stroke-opacity="0.6"/>
+          <polygon points="130,200 138,196 138,204" fill="#7c7c8a" fill-opacity="0.7"/>
+          <text x="490" y="245" text-anchor="middle" font-size="11" fill="#7c7c8a">…and back through the same chain for the response.</text>
+        </svg>
+      </div>
+
+      <h3 style="margin: 36px 0 4px; font-size: 18px;">The training question</h3>
+      <p class="section-sub">"Is my data used to train future models?" is the first question most people ask. The answer depends sharply on <em>how</em> you're accessing the model.</p>
+
+      <div class="grid two">
+        <div class="card">
+          <span class="pill green" style="margin-bottom:10px">Developer API</span>
+          <h3>Usually opt-out by default</h3>
+          <p>For all major API providers (Anthropic, OpenAI, Google), <em>API traffic is not used to train future models</em> by default. This is the contractual baseline for paid developer access. Logs may still exist for safety review and abuse detection — but those don't feed back into training.</p>
+        </div>
+        <div class="card">
+          <span class="pill amber" style="margin-bottom:10px">Consumer chat apps</span>
+          <h3>Often opt-in by default</h3>
+          <p>The free and lower-tier consumer apps (ChatGPT free, Gemini free, etc.) frequently use your conversations to improve future models — unless you go into settings and turn it off. Some paid tiers flip this. Always read the privacy settings before pasting sensitive content.</p>
+        </div>
+        <div class="card">
+          <span class="pill blue" style="margin-bottom:10px">Enterprise plans</span>
+          <h3>Contractually opt-out</h3>
+          <p>Enterprise and business tiers add legal guarantees: no training, often shorter or zero log retention, sometimes private deployments. This is what regulated industries use. The protection lives in the contract, not the technology.</p>
+        </div>
+        <div class="card">
+          <span class="pill rose" style="margin-bottom:10px">Self-hosted</span>
+          <h3>N/A — there's no provider</h3>
+          <p>When you run an open-source model on your own hardware, there's no provider hop to worry about. Your prompts never leave your network. But you also take on hardware, performance, and maintenance costs — and most open models lag the flagship hosted ones.</p>
+        </div>
+      </div>
+
+      <h3 style="margin: 36px 0 4px; font-size: 18px;">What self-hosting actually buys you</h3>
+      <p class="section-sub">Self-hosting is the loudest privacy answer, but it's not a clean win. Here's what it does and doesn't do.</p>
+
+      <div class="grid three">
+        <div class="card">
+          <span class="pill green" style="margin-bottom:10px">What it eliminates</span>
+          <h3>The provider hop</h3>
+          <p>Your prompts never reach a third party's servers. No external logging, no risk of training, no ToS to read. For sensitive data (medical, legal, regulated), this is often the only acceptable answer.</p>
+        </div>
+        <div class="card">
+          <span class="pill amber" style="margin-bottom:10px">What it doesn't eliminate</span>
+          <h3>Everything else</h3>
+          <p>The harness still runs somewhere. The network still carries traffic. The MCP servers your agent talks to are still doing their thing. If any of <em>those</em> are hosted elsewhere, you've only moved the boundary — you haven't closed it.</p>
+        </div>
+        <div class="card">
+          <span class="pill rose" style="margin-bottom:10px">What it costs</span>
+          <h3>Real money &amp; real work</h3>
+          <p>Hardware (GPUs aren't cheap), electricity, cooling, model updates, performance gap vs hosted flagships, and the ongoing maintenance of running your own infrastructure. Worth it for some workloads — not all.</p>
+        </div>
+      </div>
+
+      <div class="takeaway">
+        <div class="k">The takeaway</div>
+        <p>Your data takes a journey, and the privacy story lives in the defaults and contracts more than in the technology. For non-sensitive prompts, the defaults are usually fine. For sensitive ones, read the ToS before sending anything — and consider self-hosting if the answer is unclear or unacceptable. "Where does my data go?" is always a fair question to ask.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Built as a one-page explainer · Press <span class="mono">1</span>–<span class="mono">9</span> or <span class="mono">0</span> to switch tabs
+  </footer>
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.tabpanel');
+  function activate(name) {
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    panels.forEach(p => p.classList.toggle('active', p.id === name));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.tab)));
+  const order = ['intro','models','tokens','context','harness','rag','memory','skills','plugins','mcp','data'];
+  document.addEventListener('keydown', (e) => {
+    const k = e.key;
+    if (k === '0') { activate(order[9]); return; }
+    const i = parseInt(k, 10);
+    if (i >= 1 && i <= 9) activate(order[i-1]);
+  });
+</script>
+</body>
+</html>
