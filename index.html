@@ -260,10 +260,6 @@
 </style>
 </head>
 <body>
-<div class="mode-toggle" role="tablist" aria-label="Detail level">
-  <button class="active" data-mode="normal" aria-label="Normal mode">Normal</button>
-  <button data-mode="advanced" aria-label="Advanced mode">Advanced</button>
-</div>
 <div class="container">
   <header class="hero">
     <span class="eyebrow">A field guide</span>
@@ -3835,18 +3831,6 @@
     if (i >= 1 && i <= 9) activate(order[i-1]);
   });
 
-  // Normal / Advanced mode toggle (persists in localStorage)
-  const modeButtons = document.querySelectorAll('.mode-toggle button');
-  function setMode(mode) {
-    document.body.setAttribute('data-mode', mode);
-    modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-    try { localStorage.setItem('agent-anatomy-mode', mode); } catch (e) {}
-  }
-  modeButtons.forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
-  try {
-    const saved = localStorage.getItem('agent-anatomy-mode');
-    if (saved === 'advanced') setMode('advanced');
-  } catch (e) {}
 </script>
 </body>
 </html>
